@@ -1,7 +1,10 @@
 // Pass-through proxy between an API client and TWS / IB Gateway that logs every frame, so the
 // protocol is learned from the wire instead of from IB's source code (see CLAUDE.md).
 //
-//   dotnet run --project tools/IbkrWireRecorder -- <listenPort> <gatewayPort> <out.jsonl>
+//   dotnet run --project tools/IbkrWireRecorder -- <listenPort> <gatewayPort> <out.jsonl> [maxVersion]
+//
+// maxVersion rewrites the client's handshake range to v100..maxVersion, so a client that would
+// negotiate a protobuf version records the text format IBKR.Net speaks (e.g. 187).
 //
 // Point the client at 127.0.0.1:<listenPort>. Each line of the output is one frame:
 //   {"t":"…","dir":"client"|"server","fields":["49","1"]}
@@ -15,14 +18,17 @@ using System.Text;
 using System.Text.Json;
 
 if (
-	args.Length != 3
+	args.Length is < 3 or > 4
 	|| !int.TryParse(args[0], out var listenPort)
 	|| !int.TryParse(args[1], out var gatewayPort)
 )
 {
-	Console.Error.WriteLine("usage: IbkrWireRecorder <listenPort> <gatewayPort> <out.jsonl>");
+	Console.Error.WriteLine(
+		"usage: IbkrWireRecorder <listenPort> <gatewayPort> <out.jsonl> [maxVersion]"
+	);
 	return 2;
 }
+int? maxVersion = args.Length == 4 ? int.Parse(args[3]) : null;
 
 var output = new StreamWriter(args[2], append: true) { AutoFlush = true };
 var outputLock = new Lock();
@@ -62,6 +68,12 @@ async Task RelayAsync(TcpClient client, CancellationToken cancellationToken)
 	var prefix = new byte[4];
 	await fromClient.ReadExactlyAsync(prefix, cancellationToken);
 	var (rangeFrame, range) = await ReadFrameAsync(fromClient, cancellationToken);
+	if (maxVersion is { } max)
+	{
+		range = Encoding.ASCII.GetBytes($"v100..{max}");
+		rangeFrame = [.. new byte[4], .. range];
+		BinaryPrimitives.WriteInt32BigEndian(rangeFrame, range.Length);
+	}
 	await fromGateway.WriteAsync(prefix, cancellationToken);
 	await fromGateway.WriteAsync(rangeFrame, cancellationToken);
 	Log("client", [Encoding.ASCII.GetString(prefix) + Encoding.UTF8.GetString(range)]);

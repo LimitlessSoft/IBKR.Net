@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Raw wire recordings: real account data, never committed (scrubbed fixtures live in tests/)
+.recordings/

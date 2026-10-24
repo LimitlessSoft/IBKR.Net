@@ -53,6 +53,12 @@ maintainer explicitly asks for trading.
 
 # Reference
 
+## Protocol spec
+
+[docs/protocol.md](docs/protocol.md) is the spec every encoder / decoder is written from: each
+message as observed on the wire, field by field. Extend it from new recordings before coding a
+message; mark what has not been seen yet.
+
 ## Protocol facts (observed on the wire)
 
 - Connect, send the bytes `API\0`, then one frame `v{min}..{max}` (the client's supported version
