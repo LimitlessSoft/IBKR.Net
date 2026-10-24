@@ -42,6 +42,14 @@ public sealed class FakeTwsServer : IAsyncDisposable
 	/// <summary>Frames to send back for a request frame; none by default.</summary>
 	public Func<string[], IEnumerable<string[]>> Respond { get; set; } = _ => [];
 
+	/// <summary>What the server sends after StartApi; recorded order, fake accounts.</summary>
+	public IReadOnlyList<string[]> SessionStart { get; set; } =
+	[
+		["15", "1", "DU0000001,DU0000002,"],
+		["9", "1", "1"],
+		["4", "2", "-1", "2104", "Market data farm connection is OK:usfarm", ""],
+	];
+
 	public IbkrClientOptions Options(int clientId = 7) =>
 		new()
 		{
@@ -102,7 +110,8 @@ public sealed class FakeTwsServer : IAsyncDisposable
 		while (await Framing.ReadFieldsAsync(_client, _stop.Token) is { } fields)
 		{
 			Received.Enqueue(fields);
-			foreach (var reply in Respond(fields))
+			var replies = fields[0] == "71" ? SessionStart : Respond(fields);
+			foreach (var reply in replies)
 				await _client.WriteAsync(Framing.EncodeFields(reply), _stop.Token);
 		}
 	}

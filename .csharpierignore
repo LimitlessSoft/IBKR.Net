@@ -1,3 +1,4 @@
 **/*.csproj
 **/*.props
 **/*.targets
+tests/IBKR.Net.Tests/Fixtures/Recorded.cs

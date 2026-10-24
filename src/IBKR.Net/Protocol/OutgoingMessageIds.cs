@@ -1,8 +1,23 @@
 namespace IBKR.Net.Protocol;
 
-/// <summary>First field of a request frame. Each id is confirmed on the wire before it is added.</summary>
+/// <summary>First field of a request frame; each id was seen on the wire (docs/protocol.md).</summary>
 internal static class OutgoingMessageIds
 {
+	public const string RequestMarketData = "1";
+	public const string CancelMarketData = "2";
+	public const string RequestExecutions = "7";
+	public const string RequestContractDetails = "9";
+	public const string RequestHistoricalData = "20";
 	public const string RequestCurrentTime = "49";
+	public const string RequestMarketDataType = "59";
+	public const string RequestPositions = "61";
+	public const string RequestAccountSummary = "62";
+	public const string CancelAccountSummary = "63";
+	public const string CancelPositions = "64";
 	public const string StartApi = "71";
+	public const string RequestSecDefOptParams = "78";
+	public const string RequestPnl = "92";
+	public const string CancelPnl = "93";
+	public const string RequestPnlSingle = "94";
+	public const string CancelPnlSingle = "95";
 }

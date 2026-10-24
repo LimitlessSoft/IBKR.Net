@@ -147,7 +147,8 @@ Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 5 last size, 8 volume, 9 
   `[18]` regular trading hours only (`1`), `[19]` what to show (`TRADES`), `[20]` date format
   (`2` = unix seconds), `[21]` keep up to date (`0`), `[22]` chart options (`""`).
 - S → C `17`: `[1]` reqId, `[2]` start, `[3]` end, `[4]` bar count `n`, then n bars of 8 fields:
-  time (unix seconds), open, high, low, close, volume, WAP, trade count.
+  time, open, high, low, close, volume, WAP, trade count. With date format 2 the time is unix
+  seconds for intraday bars and `yyyyMMdd` for daily bars (`1 day`, seen 2026-10-24).
 
 ## Real-time bars
 
