@@ -1,0 +1,73 @@
+# IBKR.Net
+
+.NET 10 client for the Interactive Brokers TWS / IB Gateway socket API, written from scratch.
+Pre-1.0 (`0.x`). Consumed by LimitlessTrading (`LT.Ibkr`).
+
+# Rules
+
+## ⚠️ Clean-room: no Interactive Brokers code
+
+IB's API client is licensed by IB (GPL-3.0 from 10.50, non-commercial before). This library must
+contain none of it, so apps built on it can pick their own license.
+
+- **Never copy, translate or paraphrase IB source code** (any language, any version), and don't
+  decompile IB binaries to learn the protocol.
+- Learn the protocol from IB's public documentation and from **observed wire traffic**: record a
+  session through `tools/IbkrWireRecorder` (a pass-through proxy) and read the frames.
+- Recorded frames committed as test fixtures must be **scrubbed**: no real account ids, balances,
+  positions, order ids or usernames. Replace them with obvious fakes (`DU0000001`, `100000`).
+
+## ⚠️ Live accounts
+
+The maintainer is usually logged in to a **real, funded IBKR account**. Never connect to TWS or IB
+Gateway (live test, sample app, recorder, socket probe) until you have asked, in this session,
+whether it is a **paper** account or a read-only session they approve, and got an explicit yes.
+Approval does not carry over between sessions. `dotnet test` is offline and always safe.
+
+## Read-only for now
+
+There is no order placement, modification or cancellation. Don't add order requests unless the
+maintainer explicitly asks for trading.
+
+## Git
+
+- `main` holds releases only; **a push to `main` publishes every package to nuget.org**.
+- Work on the current `advance/X.Y.Z` branch (or a `feature/*` branch cut from it) and merge into
+  it. Commit only when asked.
+- Commits and PRs carry **no attribution trailers**.
+- Publishing uses nuget.org **Trusted Publishing** (`NuGet/login`, GitHub OIDC); there is no API
+  key secret.
+
+## Code
+
+- Layering: `IBKR.Net.Contracts` (public models, options; references nothing) → `IBKR.Net`.
+- Inside `IBKR.Net`: `Transport/` (socket, handshake, framing), `Protocol/` (message ids, encoders,
+  decoders), `Client/` (`IbkrClient`, request correlation, streams). Only `Client` and the
+  Contracts are public; everything else is `internal` (tests see it via `InternalsVisibleTo`).
+- Public types that would otherwise be ambiguous carry the `Ibkr` prefix (`IbkrClient`,
+  `IbkrClientOptions`).
+- One version for every package, in the root `Directory.Build.props`.
+- Tests never touch the network beyond loopback: `tests/IBKR.Net.Tests/Fakes/FakeTwsServer`
+  plays recorded frames.
+- Format with CSharpier (`csharpier format .`): tabs, width 100. Warnings are errors.
+
+# Reference
+
+## Protocol facts (observed on the wire)
+
+- Connect, send the bytes `API\0`, then one frame `v{min}..{max}` (the client's supported version
+  range). The server answers with one frame: `serverVersion`, `connectionTime`.
+- Every frame after that: a 4-byte big-endian length, then NUL-terminated ASCII fields. The first
+  field is the message id.
+- We cap the version range below the server versions that switch messages to protobuf
+  (`ProtocolVersions`), so every message stays in the text format.
+- Start the API session: `71`, `2`, `clientId`, `optionalCapabilities`.
+- Server time: send `49`, `1`; receive `49`, `1`, `unixSeconds`.
+
+## Commands
+
+```bash
+dotnet build IBKR.Net.slnx
+dotnet test
+csharpier format .
+```
