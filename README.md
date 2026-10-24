@@ -27,8 +27,38 @@ IB's servers, and IBKR.Net connects to it on `127.0.0.1` (Gateway: 4001 live / 4
 await using var client = await IbkrClient.ConnectAsync(
 	new IbkrClientOptions { Host = "127.0.0.1", Port = 4002, ClientId = 1 }
 );
-var serverTime = await client.GetServerTimeAsync();
+
+var spy = (await client.GetContractDetailsAsync(
+	new Contract { Symbol = "SPY", SecurityType = "STK", Exchange = "SMART", Currency = "USD" }
+))[0].Contract;
+
+await client.SetMarketDataTypeAsync(MarketDataType.Delayed);
+await foreach (var tick in client.SubscribeMarketDataAsync(spy))
+	Console.WriteLine($"{tick.Field}: {tick.Price} {tick.Size}");
 ```
+
+Streams cancel their IB request when you stop reading; errors IB reports for a request throw
+`IbkrException`, informational messages arrive on `client.Notice`.
+
+## What it covers (0.1.0)
+
+| `IbkrClient` | IB request |
+|---|---|
+| `ConnectAsync`, `ManagedAccounts`, `Disconnected`, `Notice` | session, `managedAccounts`, errors |
+| `GetServerTimeAsync` | `reqCurrentTime` |
+| `GetContractDetailsAsync` | `reqContractDetails` |
+| `GetOptionChainParametersAsync` | `reqSecDefOptParams` |
+| `SetMarketDataTypeAsync`, `SubscribeMarketDataAsync` | `reqMarketDataType`, `reqMktData` |
+| `GetHistoricalBarsAsync` | `reqHistoricalData` |
+| `SubscribeRealtimeBarsAsync` | `reqRealTimeBars` |
+| `GetPositionsAsync`, `SubscribePositionsAsync` | `reqPositions` |
+| `SubscribeAccountSummaryAsync` | `reqAccountSummary` |
+| `SubscribeAccountPnlAsync`, `SubscribePositionPnlAsync` | `reqPnL`, `reqPnLSingle` |
+
+It speaks protocol version 187 (text messages), which current TWS / IB Gateway still accept.
+
+**Not yet:** open orders, executions and commission reports, market depth, tick-by-tick data,
+option greeks, scanners, news. **Read-only:** there is no order placement.
 
 ## Building
 
