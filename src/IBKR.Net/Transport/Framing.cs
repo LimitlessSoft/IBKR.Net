@@ -45,7 +45,7 @@ internal static class Framing
 	)
 	{
 		var header = new byte[4];
-		if (!await ReadExactlyOrEndAsync(stream, header, cancellationToken))
+		if (!await ReadExactlyOrEndAsync(stream, header, cancellationToken).ConfigureAwait(false))
 			return null;
 
 		var length = BinaryPrimitives.ReadInt32BigEndian(header);
@@ -53,7 +53,7 @@ internal static class Framing
 			throw new InvalidDataException($"Invalid frame length {length}.");
 
 		var payload = new byte[length];
-		if (!await ReadExactlyOrEndAsync(stream, payload, cancellationToken))
+		if (!await ReadExactlyOrEndAsync(stream, payload, cancellationToken).ConfigureAwait(false))
 			throw new EndOfStreamException("The connection closed in the middle of a frame.");
 		return DecodeFields(payload);
 	}
@@ -67,7 +67,9 @@ internal static class Framing
 		var read = 0;
 		while (read < buffer.Length)
 		{
-			var count = await stream.ReadAsync(buffer.AsMemory(read), cancellationToken);
+			var count = await stream
+				.ReadAsync(buffer.AsMemory(read), cancellationToken)
+				.ConfigureAwait(false);
 			if (count == 0)
 			{
 				if (read == 0)

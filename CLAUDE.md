@@ -50,6 +50,9 @@ maintainer explicitly asks for trading.
 - Tests never touch the network beyond loopback: `tests/IBKR.Net.Tests/Fakes/FakeTwsServer`
   plays recorded frames.
 - Format with CSharpier (`csharpier format .`): tabs, width 100. Warnings are errors.
+- Every `await` in library code ends with `.ConfigureAwait(false)` (also `await foreach` /
+  `await using`): an app blocking on the client from a UI thread must not deadlock. CA2007 is an
+  error under `src/` (`src/.editorconfig`); `SynchronizationContextTests` cover it.
 
 # Reference
 

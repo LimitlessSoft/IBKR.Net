@@ -53,17 +53,19 @@ internal sealed class TwsConnection : IAsyncDisposable
 		var tcp = new TcpClient { NoDelay = true };
 		try
 		{
-			await tcp.ConnectAsync(options.Host, options.Port, timeout.Token);
+			await tcp.ConnectAsync(options.Host, options.Port, timeout.Token).ConfigureAwait(false);
 			var stream = tcp.GetStream();
 
-			await stream.WriteAsync(ApiPrefix, timeout.Token);
-			await stream.WriteAsync(
-				Framing.EncodeRaw($"v{ProtocolVersions.Min}..{ProtocolVersions.Max}"),
-				timeout.Token
-			);
+			await stream.WriteAsync(ApiPrefix, timeout.Token).ConfigureAwait(false);
+			await stream
+				.WriteAsync(
+					Framing.EncodeRaw($"v{ProtocolVersions.Min}..{ProtocolVersions.Max}"),
+					timeout.Token
+				)
+				.ConfigureAwait(false);
 
 			var reply =
-				await Framing.ReadFieldsAsync(stream, timeout.Token)
+				await Framing.ReadFieldsAsync(stream, timeout.Token).ConfigureAwait(false)
 				?? throw new IOException("The server closed the connection during the handshake.");
 			if (
 				reply.Length < 2
@@ -74,15 +76,17 @@ internal sealed class TwsConnection : IAsyncDisposable
 				);
 
 			var connection = new TwsConnection(tcp, serverVersion, reply[1]);
-			await connection.SendAsync(
-				[
-					OutgoingMessageIds.StartApi,
-					"2",
-					options.ClientId.ToString(CultureInfo.InvariantCulture),
-					string.Empty,
-				],
-				timeout.Token
-			);
+			await connection
+				.SendAsync(
+					[
+						OutgoingMessageIds.StartApi,
+						"2",
+						options.ClientId.ToString(CultureInfo.InvariantCulture),
+						string.Empty,
+					],
+					timeout.Token
+				)
+				.ConfigureAwait(false);
 			return connection;
 		}
 		catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -108,10 +112,10 @@ internal sealed class TwsConnection : IAsyncDisposable
 			throw new IOException("The connection to TWS / IB Gateway is closed.");
 
 		var frame = Framing.EncodeFields(fields);
-		await _writeLock.WaitAsync(cancellationToken);
+		await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
 		try
 		{
-			await _stream.WriteAsync(frame, cancellationToken);
+			await _stream.WriteAsync(frame, cancellationToken).ConfigureAwait(false);
 		}
 		finally
 		{
@@ -121,10 +125,10 @@ internal sealed class TwsConnection : IAsyncDisposable
 
 	public async ValueTask DisposeAsync()
 	{
-		await _stop.CancelAsync();
+		await _stop.CancelAsync().ConfigureAwait(false);
 		_tcp.Dispose();
 		if (_reader != null)
-			await _reader;
+			await _reader.ConfigureAwait(false);
 		OnClosed(null);
 		_stop.Dispose();
 		_writeLock.Dispose();
@@ -135,7 +139,10 @@ internal sealed class TwsConnection : IAsyncDisposable
 		Exception? error = null;
 		try
 		{
-			while (await Framing.ReadFieldsAsync(_stream, _stop.Token) is { } fields)
+			while (
+				await Framing.ReadFieldsAsync(_stream, _stop.Token).ConfigureAwait(false)
+					is { } fields
+			)
 				if (fields.Length > 0)
 					MessageReceived?.Invoke(fields);
 		}

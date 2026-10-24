@@ -1,0 +1,4 @@
+# Library code: never resume on the caller's synchronization context (a UI app that blocks on a
+# task would deadlock), so every await must say ConfigureAwait(false)
+[*.cs]
+dotnet_diagnostic.CA2007.severity = error

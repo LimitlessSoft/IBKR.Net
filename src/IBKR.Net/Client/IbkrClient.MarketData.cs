@@ -64,26 +64,27 @@ public sealed partial class IbkrClient
 		CancellationToken cancellationToken = default
 	) =>
 		await CollectAsync(
-			id =>
-				new RequestBuilder(OutgoingMessageIds.RequestHistoricalData)
-					.Add(id)
-					.AddContract(contract)
-					.Add(false) // include expired
-					.Add(endDateTime)
-					.Add(barSize)
-					.Add(duration)
-					.Add(useRegularTradingHours)
-					.Add(whatToShow)
-					.Add(2) // date format: unix seconds
-					.Add(false) // keep up to date
-					.Add(string.Empty), // chart options
-			fields =>
-				fields[0] == IncomingMessageIds.HistoricalData
-					? Decoders.HistoricalData(fields)
-					: null,
-			IncomingMessageIds.HistoricalData,
-			cancellationToken
-		);
+				id =>
+					new RequestBuilder(OutgoingMessageIds.RequestHistoricalData)
+						.Add(id)
+						.AddContract(contract)
+						.Add(false) // include expired
+						.Add(endDateTime)
+						.Add(barSize)
+						.Add(duration)
+						.Add(useRegularTradingHours)
+						.Add(whatToShow)
+						.Add(2) // date format: unix seconds
+						.Add(false) // keep up to date
+						.Add(string.Empty), // chart options
+				fields =>
+					fields[0] == IncomingMessageIds.HistoricalData
+						? Decoders.HistoricalData(fields)
+						: null,
+				IncomingMessageIds.HistoricalData,
+				cancellationToken
+			)
+			.ConfigureAwait(false);
 
 	/// <summary>
 	/// 5-second bars as they complete (reqRealTimeBars), until you stop reading. "TRADES" bars

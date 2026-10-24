@@ -65,15 +65,19 @@ public sealed partial class IbkrClient : IAsyncDisposable
 	)
 	{
 		ArgumentNullException.ThrowIfNull(options);
-		var client = new IbkrClient(await TwsConnection.ConnectAsync(options, cancellationToken));
+		var client = new IbkrClient(
+			await TwsConnection.ConnectAsync(options, cancellationToken).ConfigureAwait(false)
+		);
 		try
 		{
-			await client._ready.Task.WaitAsync(options.ConnectTimeout, cancellationToken);
+			await client
+				._ready.Task.WaitAsync(options.ConnectTimeout, cancellationToken)
+				.ConfigureAwait(false);
 			return client;
 		}
 		catch
 		{
-			await client.DisposeAsync();
+			await client.DisposeAsync().ConfigureAwait(false);
 			throw;
 		}
 	}
@@ -87,20 +91,21 @@ public sealed partial class IbkrClient : IAsyncDisposable
 			TaskCreationOptions.RunContinuationsAsynchronously
 		);
 		// A cancelled or unsent request leaves its waiter completed; replies skip completed waiters
-		await using var registration = cancellationToken.Register(() => waiter.TrySetCanceled());
+		await using var registration = cancellationToken
+			.Register(() => waiter.TrySetCanceled())
+			.ConfigureAwait(false);
 		_serverTimeWaiters.Enqueue(waiter);
 		try
 		{
-			await _connection.SendAsync(
-				[OutgoingMessageIds.RequestCurrentTime, "1"],
-				cancellationToken
-			);
+			await _connection
+				.SendAsync([OutgoingMessageIds.RequestCurrentTime, "1"], cancellationToken)
+				.ConfigureAwait(false);
 		}
 		catch (Exception ex)
 		{
 			waiter.TrySetException(ex);
 		}
-		return await waiter.Task;
+		return await waiter.Task.ConfigureAwait(false);
 	}
 
 	/// <summary>Closes the connection; pending requests and streams fail.</summary>
@@ -121,8 +126,10 @@ public sealed partial class IbkrClient : IAsyncDisposable
 		_requests[id] = handler;
 		try
 		{
-			await _connection.SendAsync(request(id).Build(), cancellationToken);
-			return await handler.Result.WaitAsync(cancellationToken);
+			await _connection
+				.SendAsync(request(id).Build(), cancellationToken)
+				.ConfigureAwait(false);
+			return await handler.Result.WaitAsync(cancellationToken).ConfigureAwait(false);
 		}
 		finally
 		{
@@ -144,15 +151,19 @@ public sealed partial class IbkrClient : IAsyncDisposable
 		_requests[id] = handler;
 		try
 		{
-			await _connection.SendAsync(request(id).Build(), cancellationToken);
-			await foreach (var item in handler.Reader.ReadAllAsync(cancellationToken))
+			await _connection
+				.SendAsync(request(id).Build(), cancellationToken)
+				.ConfigureAwait(false);
+			await foreach (
+				var item in handler.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)
+			)
 				yield return item;
 		}
 		finally
 		{
 			// Still registered = the caller stopped reading; an IB error has removed it already
 			if (_requests.TryRemove(id, out _) && IsConnected)
-				await SendQuietlyAsync(cancel(id));
+				await SendQuietlyAsync(cancel(id)).ConfigureAwait(false);
 		}
 	}
 
@@ -160,7 +171,9 @@ public sealed partial class IbkrClient : IAsyncDisposable
 	{
 		try
 		{
-			await _connection.SendAsync(request.Build(), CancellationToken.None);
+			await _connection
+				.SendAsync(request.Build(), CancellationToken.None)
+				.ConfigureAwait(false);
 		}
 		catch (IOException) { }
 	}

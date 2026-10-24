@@ -22,12 +22,12 @@ public sealed partial class IbkrClient
 		AddPositionListener(handler);
 		try
 		{
-			await RequestPositionsAsync(cancellationToken);
-			return await handler.Result.WaitAsync(cancellationToken);
+			await RequestPositionsAsync(cancellationToken).ConfigureAwait(false);
+			return await handler.Result.WaitAsync(cancellationToken).ConfigureAwait(false);
 		}
 		finally
 		{
-			await RemovePositionListenerAsync(handler);
+			await RemovePositionListenerAsync(handler).ConfigureAwait(false);
 		}
 	}
 
@@ -42,13 +42,15 @@ public sealed partial class IbkrClient
 		AddPositionListener(handler);
 		try
 		{
-			await RequestPositionsAsync(cancellationToken);
-			await foreach (var position in handler.Reader.ReadAllAsync(cancellationToken))
+			await RequestPositionsAsync(cancellationToken).ConfigureAwait(false);
+			await foreach (
+				var position in handler.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)
+			)
 				yield return position;
 		}
 		finally
 		{
-			await RemovePositionListenerAsync(handler);
+			await RemovePositionListenerAsync(handler).ConfigureAwait(false);
 		}
 	}
 
@@ -133,7 +135,8 @@ public sealed partial class IbkrClient
 			last = _positionListeners.Count == 0;
 		}
 		if (last && IsConnected)
-			await SendQuietlyAsync(new RequestBuilder(OutgoingMessageIds.CancelPositions).Add(1));
+			await SendQuietlyAsync(new RequestBuilder(OutgoingMessageIds.CancelPositions).Add(1))
+				.ConfigureAwait(false);
 	}
 
 	private void OnPositionMessage(string[] fields)
