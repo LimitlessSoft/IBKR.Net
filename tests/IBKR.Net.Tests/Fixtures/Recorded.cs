@@ -50,6 +50,20 @@ public static class Recorded
 		["45", "6", "6", "49", "0.0"],
 	];
 
+	/// <summary>BTC on PAXOS, recorded 2026-10-24 (crypto trades on weekends).</summary>
+	public static readonly string[] TickStringLastTime = ["46", "6", "3", "45", "1792879706"];
+
+	public static readonly string[] RealTimeBarTrades =
+	[
+		"50", "3", "5", "1792879760", "80364.5", "80364.5", "80364.5", "80364.5", "6.200000000E-7",
+		"80364.5000000000000000", "1",
+	];
+
+	public static readonly string[] RealTimeBarMidpoint =
+	[
+		"50", "3", "4", "1792879725", "80355.0", "80355.0", "80354.5", "80354.625", "", "", "-1",
+	];
+
 	public static readonly string[] Position =
 	[
 		"61", "3", "DU0000001", "920268479", "SPY", "OPT", "20261023", "759.0", "C", "100", "",

@@ -11,6 +11,8 @@ internal static class IncomingMessageIds
 	public const string ManagedAccounts = "15";
 	public const string HistoricalData = "17";
 	public const string TickGeneric = "45";
+	public const string TickString = "46";
+	public const string RealTimeBar = "50";
 	public const string CurrentTime = "49";
 	public const string ContractDataEnd = "52";
 	public const string MarketDataType = "58";
@@ -34,7 +36,7 @@ internal static class IncomingMessageIds
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
 			HistoricalData or Pnl or PnlSingle => 1,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
-			TickPrice or TickSize or TickGeneric => 2,
+			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,
 			_ => null,
 		};
 }

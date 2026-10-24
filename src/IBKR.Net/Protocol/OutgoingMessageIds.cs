@@ -9,6 +9,8 @@ internal static class OutgoingMessageIds
 	public const string RequestContractDetails = "9";
 	public const string RequestHistoricalData = "20";
 	public const string RequestCurrentTime = "49";
+	public const string RequestRealTimeBars = "50";
+	public const string CancelRealTimeBars = "51";
 	public const string RequestMarketDataType = "59";
 	public const string RequestPositions = "61";
 	public const string RequestAccountSummary = "62";

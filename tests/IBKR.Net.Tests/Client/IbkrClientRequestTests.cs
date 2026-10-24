@@ -316,4 +316,58 @@ public class IbkrClientRequestTests
 
 		Assert.Equal(["59", "1", "3"], (await server.WaitForFramesAsync(2))[1]);
 	}
+
+	[Fact]
+	public async Task Realtime_bars_request_matches_the_recording_and_cancels()
+	{
+		await using var server = new FakeTwsServer
+		{
+			Respond = f =>
+				f[0] == "50" ? [WithRequestId(Recorded.RealTimeBarMidpoint, 2, f[2])] : [],
+		};
+		await using var client = await IbkrClient.ConnectAsync(server.Options(), Ct);
+
+		Bar? first = null;
+		await foreach (
+			var bar in client.SubscribeRealtimeBarsAsync(
+				new Contract { ConId = 479624278, Exchange = "PAXOS" },
+				"MIDPOINT",
+				useRegularTradingHours: false,
+				Ct
+			)
+		)
+		{
+			first = bar;
+			break;
+		}
+
+		Assert.Equal(80354.625, first!.Close);
+		var sent = server.Received.Single(x => x[0] == "50");
+		Assert.Equal(
+			[
+				"50",
+				"3",
+				sent[2],
+				"479624278",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"",
+				"PAXOS",
+				"",
+				"",
+				"",
+				"",
+				"5",
+				"MIDPOINT",
+				"0",
+				"",
+			],
+			sent
+		);
+		var cancel = (await server.WaitForFramesAsync(3)).Single(x => x[0] == "51");
+		Assert.Equal(["51", "1", sent[2]], cancel);
+	}
 }

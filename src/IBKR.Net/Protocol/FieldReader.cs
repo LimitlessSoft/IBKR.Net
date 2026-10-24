@@ -34,5 +34,11 @@ internal sealed class FieldReader(string[] fields, int start = 0)
 			? value
 			: 0;
 
+	/// <summary>Empty reads as <paramref name="unset"/> (e.g. -1 for a midpoint bar's volume).</summary>
+	public decimal DecimalOr(decimal unset) =>
+		decimal.TryParse(String(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+			? value
+			: unset;
+
 	public void Skip(int count = 1) => _index += count;
 }

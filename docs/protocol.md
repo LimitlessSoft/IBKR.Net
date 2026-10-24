@@ -137,8 +137,11 @@ they are not needed yet and are skipped.
     `[5]` size, `[6]` attribute bitmask.
   - `2` TickSize: `[1]` 6, `[2]` reqId, `[3]` tick type, `[4]` size.
   - `45` TickGeneric: `[1]` 6, `[2]` reqId, `[3]` tick type, `[4]` value.
+  - `46` TickString: `[1]` 6, `[2]` reqId, `[3]` tick type, `[4]` value (seen 2026-10-24 on
+    crypto: type 45, last trade time in unix seconds).
 
-Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 5 last size, 8 volume, 9 close, 49 halted.
+Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 4 last, 5 last size, 6 high, 7 low,
+8 volume, 9 close, 45 last timestamp, 49 halted. Sizes may be fractional (crypto: `0.00039253`).
 
 ## Historical bars
 
@@ -155,7 +158,10 @@ Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 5 last size, 8 volume, 9 
 - C → S `50` (v3): `[1]` 3, `[2]` reqId, `[3..14]` contract block (c = 3), `[15]` bar size (`5`),
   `[16]` what to show, `[17]` regular trading hours only, `[18]` options (`""`).
 - C → S `51` Cancel: `[1]` 1, `[2]` reqId.
-- S → C bars: **not seen yet** (recorded on a weekend). To record on a trading day.
+- S → C `50` bar, every 5 seconds: `[1]` 3, `[2]` reqId, `[3]` time (unix seconds), `[4]` open,
+  `[5]` high, `[6]` low, `[7]` close, `[8]` volume, `[9]` WAP, `[10]` trade count. `MIDPOINT`
+  bars have `""` volume and WAP and count `-1`. Volume may be in exponent form (`6.2E-7`).
+  Seen 2026-10-24 on BTC (PAXOS, trades 24/7).
 
 ## Positions
 

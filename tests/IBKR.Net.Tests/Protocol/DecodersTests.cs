@@ -105,6 +105,44 @@ public class DecodersTests
 	}
 
 	[Fact]
+	public void A_string_tick_keeps_its_text() =>
+		Assert.Equal(
+			new MarketDataTick(45, StringValue: "1792879706"),
+			Decoders.TickString(Recorded.TickStringLastTime)
+		);
+
+	[Fact]
+	public void A_trades_bar_reads_exponent_volume_and_wap()
+	{
+		var bar = Decoders.RealTimeBar(Recorded.RealTimeBarTrades);
+
+		Assert.Equal(
+			new Bar(
+				DateTimeOffset.FromUnixTimeSeconds(1792879760),
+				80364.5,
+				80364.5,
+				80364.5,
+				80364.5,
+				0.00000062m,
+				80364.5m,
+				1
+			),
+			bar
+		);
+	}
+
+	[Fact]
+	public void A_midpoint_bar_has_no_volume_wap_or_count() =>
+		Assert.Equal(
+			(-1m, -1m, -1),
+			(
+				Decoders.RealTimeBar(Recorded.RealTimeBarMidpoint).Volume,
+				Decoders.RealTimeBar(Recorded.RealTimeBarMidpoint).Wap,
+				Decoders.RealTimeBar(Recorded.RealTimeBarMidpoint).Count
+			)
+		);
+
+	[Fact]
 	public void A_position_carries_its_contract()
 	{
 		var position = Decoders.Position(Recorded.Position);

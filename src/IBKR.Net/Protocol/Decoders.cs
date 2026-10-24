@@ -130,6 +130,29 @@ internal static class Decoders
 		return new MarketDataTick(reader.Int(), Value: reader.Double());
 	}
 
+	/// <summary>46: [3] tick type, [4] value (45 = last trade time, unix seconds).</summary>
+	public static MarketDataTick TickString(string[] fields)
+	{
+		var reader = new FieldReader(fields, 3);
+		return new MarketDataTick(reader.Int(), StringValue: reader.String());
+	}
+
+	/// <summary>50: [3] time, open, high, low, close, volume, WAP, count; empty = -1.</summary>
+	public static Bar RealTimeBar(string[] fields)
+	{
+		var reader = new FieldReader(fields, 3);
+		return new Bar(
+			DateTimeOffset.FromUnixTimeSeconds(reader.Long()),
+			reader.Double(),
+			reader.Double(),
+			reader.Double(),
+			reader.Double(),
+			reader.DecimalOr(-1),
+			reader.DecimalOr(-1),
+			reader.Int()
+		);
+	}
+
 	/// <summary>17: [1] request id, start, end, count, then 8 fields per bar.</summary>
 	public static IReadOnlyList<Bar> HistoricalData(string[] fields)
 	{

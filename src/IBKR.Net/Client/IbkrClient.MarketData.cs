@@ -44,6 +44,7 @@ public sealed partial class IbkrClient
 					IncomingMessageIds.TickPrice => Decoders.TickPrice(fields),
 					IncomingMessageIds.TickSize => Decoders.TickSize(fields),
 					IncomingMessageIds.TickGeneric => Decoders.TickGeneric(fields),
+					IncomingMessageIds.TickString => Decoders.TickString(fields),
 					_ => null,
 				},
 			cancellationToken
@@ -81,6 +82,32 @@ public sealed partial class IbkrClient
 					? Decoders.HistoricalData(fields)
 					: null,
 			IncomingMessageIds.HistoricalData,
+			cancellationToken
+		);
+
+	/// <summary>
+	/// 5-second bars as they complete (reqRealTimeBars), until you stop reading. "TRADES" bars
+	/// carry volume and WAP; "MIDPOINT", "BID" and "ASK" bars have -1 there.
+	/// </summary>
+	public IAsyncEnumerable<Bar> SubscribeRealtimeBarsAsync(
+		Contract contract,
+		string whatToShow = "TRADES",
+		bool useRegularTradingHours = true,
+		CancellationToken cancellationToken = default
+	) =>
+		StreamAsync(
+			id =>
+				new RequestBuilder(OutgoingMessageIds.RequestRealTimeBars)
+					.Add(3)
+					.Add(id)
+					.AddContract(contract)
+					.Add(5) // bar size: IB only serves 5 seconds
+					.Add(whatToShow)
+					.Add(useRegularTradingHours)
+					.Add(string.Empty), // options
+			id => new RequestBuilder(OutgoingMessageIds.CancelRealTimeBars).Add(1).Add(id),
+			fields =>
+				fields[0] == IncomingMessageIds.RealTimeBar ? Decoders.RealTimeBar(fields) : null,
 			cancellationToken
 		);
 }

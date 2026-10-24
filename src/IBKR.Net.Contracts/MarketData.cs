@@ -22,7 +22,10 @@ public sealed record MarketDataTick(
 	string? StringValue = null
 );
 
-/// <summary>A price bar; <see cref="Wap"/> and <see cref="Count"/> are -1 when IB has none.</summary>
+/// <summary>
+/// A price bar; <see cref="Volume"/>, <see cref="Wap"/> and <see cref="Count"/> are -1 when IB has
+/// none (e.g. midpoint bars).
+/// </summary>
 public sealed record Bar(
 	DateTimeOffset Time,
 	double Open,
