@@ -1,0 +1,28 @@
+name: Format
+
+on:
+  pull_request:
+    branches: [ main, 'advance/**' ]
+  push:
+    branches: [ main, 'advance/**' ]
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install CSharpier
+        run: dotnet tool install --global csharpier --version 1.3.0
+
+      - name: Check formatting
+        run: csharpier check .

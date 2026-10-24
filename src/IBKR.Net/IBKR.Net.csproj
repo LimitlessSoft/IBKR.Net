@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Description>A from-scratch .NET client for the Interactive Brokers TWS / IB Gateway socket API. Contains no Interactive Brokers code.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\IBKR.Net.Contracts\IBKR.Net.Contracts.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="IBKR.Net.Tests" />
+	</ItemGroup>
+</Project>

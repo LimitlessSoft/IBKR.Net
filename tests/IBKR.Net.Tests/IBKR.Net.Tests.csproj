@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\IBKR.Net\IBKR.Net.csproj" />
+	</ItemGroup>
+</Project>

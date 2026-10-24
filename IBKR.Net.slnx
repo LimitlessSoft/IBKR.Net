@@ -1,0 +1,9 @@
+<Solution>
+	<Folder Name="/src/">
+		<Project Path="src/IBKR.Net.Contracts/IBKR.Net.Contracts.csproj" />
+		<Project Path="src/IBKR.Net/IBKR.Net.csproj" />
+	</Folder>
+	<Folder Name="/tests/">
+		<Project Path="tests/IBKR.Net.Tests/IBKR.Net.Tests.csproj" />
+	</Folder>
+</Solution>

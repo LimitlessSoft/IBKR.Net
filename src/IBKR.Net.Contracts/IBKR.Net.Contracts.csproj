@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<RootNamespace>IBKR.Net</RootNamespace>
+		<Description>Models and options of IBKR.Net, a from-scratch client for the Interactive Brokers TWS / IB Gateway socket API.</Description>
+	</PropertyGroup>
+</Project>

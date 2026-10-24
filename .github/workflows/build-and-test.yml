@@ -1,0 +1,36 @@
+name: Build and test
+
+on:
+  pull_request:
+    branches: [ main, 'advance/**' ]
+  push:
+    branches: [ main, 'advance/**' ]
+
+concurrency:
+  group: build-and-test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore IBKR.Net.slnx
+
+      - name: Build
+        run: dotnet build IBKR.Net.slnx -c Release --no-restore
+
+      # Offline: the tests talk to a fake TWS server on loopback, never to IB
+      - name: Test
+        run: dotnet test IBKR.Net.slnx -c Release --no-build

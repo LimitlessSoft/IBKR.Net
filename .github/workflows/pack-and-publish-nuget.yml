@@ -1,0 +1,45 @@
+name: Pack and publish nuget packages
+
+# main only receives releases: every push to it publishes the packages. The version comes from
+# Directory.Build.props; --skip-duplicate makes a push without a version bump a no-op.
+#
+# Trusted Publishing: no API key is stored. NuGet/login trades GitHub's OIDC token for a
+# short-lived nuget.org key, which works only while nuget.org has a Trusted Publishing policy for
+# this repository and workflow file (LimitlessSoft / IBKR.Net / pack-and-publish-nuget.yml).
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  pack-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test IBKR.Net.slnx -c Release
+
+      - name: Pack
+        run: |
+          dotnet pack src/IBKR.Net.Contracts/IBKR.Net.Contracts.csproj -c Release -o artifacts
+          dotnet pack src/IBKR.Net/IBKR.Net.csproj -c Release -o artifacts
+
+      # The nuget.org account that owns the Trusted Publishing policy
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: LimitlessSoft
+
+      - name: Publish
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

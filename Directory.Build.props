@@ -1,0 +1,27 @@
+<Project>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>latest</LangVersion>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<!-- One version for every package; bump it here only -->
+	<PropertyGroup>
+		<Version>0.1.0</Version>
+		<Authors>LimitlessSoft</Authors>
+		<Company>LimitlessSoft</Company>
+		<Copyright>Copyright (c) 2026 LimitlessSoft</Copyright>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/LimitlessSoft/IBKR.Net</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/LimitlessSoft/IBKR.Net</RepositoryUrl>
+		<PackageTags>interactive-brokers;ibkr;tws;ib-gateway;trading</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(IsPackable)' != 'false'">
+		<None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+</Project>
