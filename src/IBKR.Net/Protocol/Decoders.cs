@@ -12,6 +12,29 @@ internal static class Decoders
 		return new IbkrNotice(reader.Int(), reader.Int(), reader.String());
 	}
 
+	/// <summary>
+	/// 3 (at version 178): [1] order id, [2] status, [3] filled, [4] remaining, [5] average fill
+	/// price, [6] perm id, [7] parent id, [8] last fill price, [9] client id, [10] why held,
+	/// [11] market cap price. Empty numbers read as 0 (market cap price: null).
+	/// </summary>
+	public static OrderStatus OrderStatus(string[] fields)
+	{
+		var reader = new FieldReader(fields, 1);
+		return new OrderStatus(
+			reader.Int(),
+			reader.String(),
+			reader.Decimal(),
+			reader.Decimal(),
+			reader.Double(),
+			reader.Long(),
+			reader.Int(),
+			reader.Double(),
+			reader.Int(),
+			reader.String(),
+			reader.NullableDouble()
+		);
+	}
+
 	/// <summary>15: [2] comma-separated accounts, with a trailing comma.</summary>
 	public static IReadOnlyList<string> ManagedAccounts(string[] fields) =>
 		new FieldReader(fields, 2).String().Split(',', StringSplitOptions.RemoveEmptyEntries);

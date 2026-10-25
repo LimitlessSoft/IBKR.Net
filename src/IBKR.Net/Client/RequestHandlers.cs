@@ -56,3 +56,30 @@ internal sealed class StreamHandler<T>(Func<string[], T?> decode) : IRequestHand
 
 	public void OnClosed(Exception error) => _channel.Writer.TryComplete(error);
 }
+
+/// <summary>
+/// One placed order: its status updates until one is final, or an error rejects it. Calls
+/// <paramref name="onDone"/> when nothing more will come.
+/// </summary>
+internal sealed class OrderHandler(Action onDone) : IRequestHandler
+{
+	private readonly Channel<OrderStatus> _channel = Channel.CreateUnbounded<OrderStatus>(
+		new UnboundedChannelOptions { SingleReader = true }
+	);
+
+	public ChannelReader<OrderStatus> Reader => _channel.Reader;
+
+	public void OnMessage(string[] fields)
+	{
+		if (fields[0] != Protocol.IncomingMessageIds.OrderStatus)
+			return;
+		var status = Protocol.Decoders.OrderStatus(fields);
+		_channel.Writer.TryWrite(status);
+		if (status.IsDone && _channel.Writer.TryComplete())
+			onDone();
+	}
+
+	public void OnError(IbkrException error) => _channel.Writer.TryComplete(error);
+
+	public void OnClosed(Exception error) => _channel.Writer.TryComplete(error);
+}

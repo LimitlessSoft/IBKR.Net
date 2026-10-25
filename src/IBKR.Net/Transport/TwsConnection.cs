@@ -47,6 +47,7 @@ internal sealed class TwsConnection : IAsyncDisposable
 		CancellationToken cancellationToken
 	)
 	{
+		var versionRange = ProtocolVersions.Range(options.MaxServerVersion);
 		using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 		timeout.CancelAfter(options.ConnectTimeout);
 
@@ -58,10 +59,7 @@ internal sealed class TwsConnection : IAsyncDisposable
 
 			await stream.WriteAsync(ApiPrefix, timeout.Token).ConfigureAwait(false);
 			await stream
-				.WriteAsync(
-					Framing.EncodeRaw($"v{ProtocolVersions.Min}..{ProtocolVersions.Max}"),
-					timeout.Token
-				)
+				.WriteAsync(Framing.EncodeRaw(versionRange), timeout.Token)
 				.ConfigureAwait(false);
 
 			var reply =

@@ -5,6 +5,7 @@ internal static class IncomingMessageIds
 {
 	public const string TickPrice = "1";
 	public const string TickSize = "2";
+	public const string OrderStatus = "3";
 	public const string Error = "4";
 	public const string NextValidId = "9";
 	public const string ContractData = "10";
@@ -35,6 +36,7 @@ internal static class IncomingMessageIds
 		{
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
 			HistoricalData or Pnl or PnlSingle => 1,
+			OrderStatus => 1, // the order id
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
 			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,
 			_ => null,

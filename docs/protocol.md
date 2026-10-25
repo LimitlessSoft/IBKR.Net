@@ -188,6 +188,48 @@ Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 4 last, 5 last size, 6 hi
 - S → C `95`: `[1]` reqId, `[2]` position, `[3]` daily, `[4]` unrealized, `[5]` realized,
   `[6]` value; unset = double max.
 
+## Orders (version 178)
+
+Recorded 2026-10-25 at protocol version **178**, the highest an independent client (ib_async,
+`v157..178`) offers. placeOrder / cancelOrder frames come from that client: sent to IB Gateway
+(live, orders rejected or cancelled before they worked, nothing filled) and to a local stand-in
+that only did the handshake, so variants could be diffed without trading. Versions 179–187 may add
+order fields that have not been seen, so the library places orders only on a connection capped at
+178 (`IbkrClientOptions.MaxServerVersion = IbkrClient.OrderProtocolVersion`).
+
+- C → S `3` Place order, 114 fields:
+  - `[1]` order id (≥ the server's next valid id, see below)
+  - `[2..13]` contract: conId, symbol, security type, last trade date, strike (`0.0` when unset),
+    right, multiplier, exchange, primary exchange, currency, local symbol, trading class
+  - `[14]` security id type, `[15]` security id (both `""`)
+  - `[16]` action `BUY` / `SELL`, `[17]` quantity (`0` for a cash quantity order)
+  - `[18]` order type `LMT` / `MKT` / `STP`, `[19]` limit price, `[20]` aux (stop) price; unset
+    prices are `""`
+  - `[21]` time in force `DAY` / `GTC` / `IOC`; `[22]` not located (`""`); `[23]` account
+  - `[33]` outside regular hours `0` / `1`; `[100]` cash quantity (`10` = $10, `""` unset)
+  - every other field of `[24..113]` was identical in every variant and is sent as seen:
+    `[24]` `O`, `[27]` `1`, `[36]` `0.0`, `[45]` `-1`, the rest `0` or `""` (see `OrderEncoder`).
+  - A what-if order sets one of the unlocated flags to `1`; IB Gateway did not answer what-if
+    crypto orders at all, so what-if is not offered.
+- C → S `4` Cancel order: `[1]` 1, `[2]` order id, `[3]` `""`.
+- S → C `3` Order status: `[1]` order id, `[2]` status, `[3]` filled, `[4]` remaining, `[5]`
+  average fill price, `[6]` perm id, `[7]` parent id, `[8]` last fill price, `[9]` client id,
+  `[10]` why held, `[11]` market cap price; empty numbers are unset. Seen: `ApiCancelled` (cancel
+  before IB accepted the order). Other statuses (`PreSubmitted`, `Submitted`, `Filled`,
+  `Cancelled`, `Inactive`) are from IB's documentation, not seen yet.
+- A rejection is only an error `4` for the order id, without a status: seen 10052 "Invalid time in
+  force" (crypto needs GTC or IOC), 435 "You must specify an account" (login with several
+  accounts), 460 "No trading permissions", and 10147 for a cancel of an unknown order.
+- Error 202 "Order Canceled" and 399 "Order Message" (a warning) are treated as notices for a
+  working order, after IB's documentation; not seen yet.
+- S → C `9` NextValidId `[2]` is the first usable order id; the client continues its request
+  id counter from it, so request and order ids never collide.
+- S → C `102` (no fields) arrives after the session starts at version 178; meaning unknown,
+  ignored.
+- Before the first crypto order, IB Gateway shows a "Cryptocurrency order confirmation" dialog
+  and holds the order (no reply) until someone clicks it.
+- Open order (`5`), execution and commission frames: **not seen yet** (no order was accepted).
+
 ## Orders and executions (read-only)
 
 - C → S `5` Open orders: `[1]` 1. S → C `53` OpenOrderEnd: `[1]` 1. Order frames themselves:

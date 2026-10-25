@@ -5,6 +5,8 @@ internal static class OutgoingMessageIds
 {
 	public const string RequestMarketData = "1";
 	public const string CancelMarketData = "2";
+	public const string PlaceOrder = "3";
+	public const string CancelOrder = "4";
 	public const string RequestExecutions = "7";
 	public const string RequestContractDetails = "9";
 	public const string RequestHistoricalData = "20";

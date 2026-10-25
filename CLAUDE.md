@@ -24,10 +24,11 @@ Gateway (live test, sample app, recorder, socket probe) until you have asked, in
 whether it is a **paper** account or a read-only session they approve, and got an explicit yes.
 Approval does not carry over between sessions. `dotnet test` is offline and always safe.
 
-## Read-only for now
+## Orders
 
-There is no order placement, modification or cancellation. Don't add order requests unless the
-maintainer explicitly asks for trading.
+Placing and cancelling orders exists (0.2.0, asked for by the maintainer) at protocol version 178
+only; see docs/protocol.md, "Orders". Never send an order to a live account from a test, sample or
+probe without the maintainer's explicit yes for that order. Order modification is not built.
 
 ## Git
 

@@ -14,4 +14,10 @@ public sealed class IbkrClientOptions
 
 	/// <summary>How long connecting and the version handshake may take.</summary>
 	public TimeSpan ConnectTimeout { get; init; } = TimeSpan.FromSeconds(10);
+
+	/// <summary>
+	/// Highest protocol version to offer; null = the newest this library supports. Orders need a
+	/// connection at <c>IbkrClient.OrderProtocolVersion</c> (the only order layout observed).
+	/// </summary>
+	public int? MaxServerVersion { get; init; }
 }

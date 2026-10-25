@@ -190,6 +190,7 @@ public sealed partial class IbkrClient : IAsyncDisposable
 				ManagedAccounts = Decoders.ManagedAccounts(fields);
 				return;
 			case IncomingMessageIds.NextValidId:
+				OnNextValidId(fields);
 				_ready.TrySetResult();
 				return;
 			case IncomingMessageIds.CurrentTime when fields.Length >= 3:
@@ -216,6 +217,16 @@ public sealed partial class IbkrClient : IAsyncDisposable
 
 	private void OnError(IbkrNotice notice)
 	{
+		// A cancel confirmation or an order warning: the order's status updates go on
+		if (
+			ErrorCodes.IsOrderNotice(notice.Code)
+			&& _requests.TryGetValue(notice.RequestId, out var request)
+			&& request is OrderHandler
+		)
+		{
+			Notice?.Invoke(notice);
+			return;
+		}
 		if (
 			notice.RequestId > 0
 			&& !ErrorCodes.IsInformational(notice.Code)
