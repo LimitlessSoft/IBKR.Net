@@ -160,6 +160,68 @@ internal static class Decoders
 		return new MarketDataTick(reader.Int(), StringValue: reader.String());
 	}
 
+	/// <summary>
+	/// 12 (one exchange's depth): [3] position, [4] operation, [5] side (0 ask, 1 bid),
+	/// [6] price, [7] size.
+	/// </summary>
+	public static MarketDepthUpdate MarketDepth(string[] fields)
+	{
+		var reader = new FieldReader(fields, 3);
+		return new MarketDepthUpdate(
+			reader.Int(),
+			(MarketDepthOperation)reader.Int(),
+			(MarketDepthSide)reader.Int(),
+			reader.Double(),
+			reader.Decimal()
+		);
+	}
+
+	/// <summary>
+	/// 13 (Level 2 / SMART depth): [3] position, [4] market maker or exchange, [5] operation,
+	/// [6] side, [7] price, [8] size, [9] SMART depth flag.
+	/// </summary>
+	public static MarketDepthUpdate MarketDepthL2(string[] fields)
+	{
+		var reader = new FieldReader(fields, 3);
+		var position = reader.Int();
+		var marketMaker = reader.String();
+		return new MarketDepthUpdate(
+			position,
+			(MarketDepthOperation)reader.Int(),
+			(MarketDepthSide)reader.Int(),
+			reader.Double(),
+			reader.Decimal(),
+			marketMaker,
+			reader.Int() == 1
+		);
+	}
+
+	/// <summary>
+	/// 80: [1] count, then per exchange: exchange, security type, listing exchange, service data
+	/// type, aggregated group (int max = unset). No request id.
+	/// </summary>
+	public static IReadOnlyList<MarketDepthExchange> MarketDepthExchanges(string[] fields)
+	{
+		var reader = new FieldReader(fields, 1);
+		var exchanges = new List<MarketDepthExchange>();
+		for (var count = reader.Int(); count > 0; count--)
+			exchanges.Add(
+				new MarketDepthExchange(
+					reader.String(),
+					reader.String(),
+					reader.String(),
+					reader.String(),
+					AggregatedGroup(reader.String())
+				)
+			);
+		return exchanges;
+	}
+
+	private static int? AggregatedGroup(string value) =>
+		int.TryParse(value, CultureInfo.InvariantCulture, out var group) && group != int.MaxValue
+			? group
+			: null;
+
 	/// <summary>85: [1] count, then code and name per provider (no request id).</summary>
 	public static IReadOnlyList<NewsProvider> NewsProviders(string[] fields)
 	{

@@ -9,6 +9,8 @@ internal static class OutgoingMessageIds
 	public const string CancelOrder = "4";
 	public const string RequestExecutions = "7";
 	public const string RequestContractDetails = "9";
+	public const string RequestMarketDepth = "10";
+	public const string CancelMarketDepth = "11";
 	public const string RequestAllOpenOrders = "16";
 	public const string RequestHistoricalData = "20";
 	public const string RequestCurrentTime = "49";
@@ -21,6 +23,7 @@ internal static class OutgoingMessageIds
 	public const string CancelPositions = "64";
 	public const string StartApi = "71";
 	public const string RequestSecDefOptParams = "78";
+	public const string RequestMarketDepthExchanges = "82";
 	public const string RequestNewsArticle = "84";
 	public const string RequestNewsProviders = "85";
 	public const string RequestHistoricalNews = "86";

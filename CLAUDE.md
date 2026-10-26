@@ -19,10 +19,11 @@ contain none of it, so apps built on it can pick their own license.
 
 ## ⚠️ Live accounts
 
-The maintainer is usually logged in to a **real, funded IBKR account**. Never connect to TWS or IB
-Gateway (live test, sample app, recorder, socket probe) until you have asked, in this session,
-whether it is a **paper** account or a read-only session they approve, and got an explicit yes.
-Approval does not carry over between sessions. `dotnet test` is offline and always safe.
+The maintainer is usually logged in to a **real, funded IBKR account**. **Read-only** sessions
+against it are pre-approved — live test, sample app, recorder, socket probe — as long as no order
+frame (`3` place, `4` cancel) is ever sent: check the recording for client frames `3` / `4`
+afterwards. Use a client id the app doesn't (the app uses 1 and 101). `dotnet test` is offline
+and always safe.
 
 ## Orders
 

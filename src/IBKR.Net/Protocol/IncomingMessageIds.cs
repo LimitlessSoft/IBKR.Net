@@ -11,6 +11,8 @@ internal static class IncomingMessageIds
 	public const string NextValidId = "9";
 	public const string ContractData = "10";
 	public const string ExecutionData = "11";
+	public const string MarketDepth = "12";
+	public const string MarketDepthL2 = "13";
 	public const string ManagedAccounts = "15";
 	public const string HistoricalData = "17";
 	public const string TickGeneric = "45";
@@ -28,6 +30,7 @@ internal static class IncomingMessageIds
 	public const string AccountSummaryEnd = "64";
 	public const string SecDefOptParams = "75";
 	public const string SecDefOptParamsEnd = "76";
+	public const string MarketDepthExchanges = "80";
 	public const string TickReqParams = "81";
 	public const string NewsArticle = "83";
 	public const string TickNews = "84";
@@ -51,6 +54,7 @@ internal static class IncomingMessageIds
 			ExecutionDataEnd => 2,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
 			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,
+			MarketDepth or MarketDepthL2 => 2,
 			_ => null,
 		};
 }

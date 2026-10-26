@@ -143,6 +143,43 @@ they are not needed yet and are skipped.
 Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 4 last, 5 last size, 6 high, 7 low,
 8 volume, 9 close, 45 last timestamp, 49 halted. Sizes may be fractional (crypto: `0.00039253`).
 
+## Market depth
+
+Recorded 2026-10-26 from IB Gateway (live, read-only) at versions **178** (ib_async) and **187**
+(raw requests in the 178 layouts): request and reply frames identical at both. The account had
+depth for IEX (US), PAXOS (crypto) and IDEALPRO (forex), not for NASDAQ TotalView, ARCA or IBIS.
+
+- C → S `10` Request: `[1]` 5, `[2]` reqId, `[3..14]` contract block (c = 3), `[15]` number of
+  rows, `[16]` SMART depth `0` / `1`, `[17]` options (`""`).
+- C → S `11` Cancel: `[1]` 1, `[2]` reqId, `[3]` SMART depth flag as requested.
+- S → C `12` Depth (one exchange — seen on IEX, PAXOS, IDEALPRO): `[1]` 1, `[2]` reqId,
+  `[3]` position (0 = best), `[4]` operation (`0` insert, `1` update, `2` delete), `[5]` side
+  (`0` ask, `1` bid), `[6]` price, `[7]` size (crypto fractional: `0.02492743`). A delete has
+  price and size `0`.
+- S → C `13` Depth L2 (SMART depth — every row names its exchange): `[1]` 1, `[2]` reqId,
+  `[3]` position, `[4]` market maker / exchange (`IEX`, `DRCTEDGE`, `MEMX`, `TGATE` …),
+  `[5]` operation, `[6]` side, `[7]` price, `[8]` size, `[9]` SMART depth (`1`). A market maker
+  book (NASDAQ TotalView, `Deep2`) was not available to record.
+- Rows: an insert at a position pushes the rows from there down, a delete pulls them up. IB
+  keeps each side at the requested rows — an insert into a full side is followed by a delete of
+  the last row — and it often sends deletes and updates for positions past the end of the side
+  as the client has built it (PAXOS: `del 4` on a 4-row side, several in a row). A client book
+  should ignore those rather than fail.
+- First comes the current book as inserts, bids then asks (`12`) or interleaved (`13`), then
+  changes. SMART depth also gets **2152** (informational, with the reqId): "Exchanges - Depth:
+  IEX; Top: BYX; … Need additional market data permissions - Depth: BATS; NASDAQ; ARCA; BEX;
+  NYSE;" — which exchanges are aggregated, quoted top only, or missing.
+- Errors (with the reqId; the stream ends): **309** "Max number (3) of market depth requests has
+  been reached" — the 4th concurrent request; **354** "Requested market data is not subscribed
+  … VOW IBIS/DEEP" (ARCA, IBIS); **10089** "Requested market data requires additional
+  subscription for API … AAPL NASDAQ.NMS/DEEP" (ISLAND). Cancelling a rejected request answers
+  **310** "Can't find the subscribed market depth with tickerId", so the client sends no cancel
+  then.
+- C → S `82` Depth exchanges: no other fields. S → C `80` (no request id): `[1]` count, then per
+  exchange: exchange, security type, listing exchange (`""` or e.g. `PINK`), service data type
+  (`Deep` 294×, `Deep2` 5×, `DeepX` 5×, `AggDeep` 2×), aggregated group (`2147483647` = unset;
+  `1`, `4`, `7`, `12`, `14` seen). 306 exchanges on this account.
+
 ## Historical bars
 
 - C → S `20`: `[1]` reqId, `[2..13]` contract block (c = 2), `[14]` include expired (`0`),

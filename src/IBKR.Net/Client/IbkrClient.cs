@@ -216,6 +216,9 @@ public sealed partial class IbkrClient : IAsyncDisposable
 			case IncomingMessageIds.NewsProviders:
 				OnNewsProviders(fields);
 				return;
+			case IncomingMessageIds.MarketDepthExchanges:
+				OnMarketDepthExchanges(fields);
+				return;
 			case IncomingMessageIds.Position or IncomingMessageIds.PositionEnd:
 				OnPositionMessage(fields);
 				return;
@@ -272,6 +275,7 @@ public sealed partial class IbkrClient : IAsyncDisposable
 		while (_serverTimeWaiters.TryDequeue(out var waiter))
 			waiter.TrySetException(closed);
 		OnNewsProvidersClosed(closed);
+		OnMarketDepthExchangesClosed(closed);
 		foreach (var id in _requests.Keys)
 			if (_requests.TryRemove(id, out var handler))
 				handler.OnClosed(closed);
