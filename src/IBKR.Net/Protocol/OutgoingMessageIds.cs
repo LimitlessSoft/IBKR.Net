@@ -21,6 +21,9 @@ internal static class OutgoingMessageIds
 	public const string CancelPositions = "64";
 	public const string StartApi = "71";
 	public const string RequestSecDefOptParams = "78";
+	public const string RequestNewsArticle = "84";
+	public const string RequestNewsProviders = "85";
+	public const string RequestHistoricalNews = "86";
 	public const string RequestPnl = "92";
 	public const string CancelPnl = "93";
 	public const string RequestPnlSingle = "94";

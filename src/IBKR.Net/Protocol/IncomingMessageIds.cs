@@ -26,6 +26,11 @@ internal static class IncomingMessageIds
 	public const string SecDefOptParams = "75";
 	public const string SecDefOptParamsEnd = "76";
 	public const string TickReqParams = "81";
+	public const string NewsArticle = "83";
+	public const string TickNews = "84";
+	public const string NewsProviders = "85";
+	public const string HistoricalNews = "86";
+	public const string HistoricalNewsEnd = "87";
 	public const string Pnl = "94";
 	public const string PnlSingle = "95";
 
@@ -38,6 +43,7 @@ internal static class IncomingMessageIds
 		{
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
 			HistoricalData or Pnl or PnlSingle => 1,
+			NewsArticle or TickNews or HistoricalNews or HistoricalNewsEnd => 1,
 			OrderStatus => 1, // the order id
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
 			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,

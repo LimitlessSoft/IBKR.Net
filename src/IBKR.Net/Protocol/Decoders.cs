@@ -160,6 +160,67 @@ internal static class Decoders
 		return new MarketDataTick(reader.Int(), StringValue: reader.String());
 	}
 
+	/// <summary>85: [1] count, then code and name per provider (no request id).</summary>
+	public static IReadOnlyList<NewsProvider> NewsProviders(string[] fields)
+	{
+		var reader = new FieldReader(fields, 1);
+		var providers = new List<NewsProvider>();
+		for (var count = reader.Int(); count > 0; count--)
+			providers.Add(new NewsProvider(reader.String(), reader.String()));
+		return providers;
+	}
+
+	/// <summary>
+	/// 86: [1] request id, [2] time (<c>2026-10-26 13:03:00.0</c>, UTC), [3] provider,
+	/// [4] article id, [5] headline with its metadata in front: <c>{A:800015:L:en}Text</c>.
+	/// </summary>
+	public static NewsHeadline HistoricalNews(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var time = DateTimeOffset.ParseExact(
+			reader.String(),
+			"yyyy-MM-dd HH:mm:ss.F",
+			CultureInfo.InvariantCulture,
+			DateTimeStyles.AssumeUniversal
+		);
+		var provider = reader.String();
+		var articleId = reader.String();
+		var headline = reader.String();
+		var extraData = string.Empty;
+		if (headline.StartsWith('{') && headline.IndexOf('}') is var close and > 0)
+		{
+			extraData = headline[1..close];
+			headline = headline[(close + 1)..];
+		}
+		return new NewsHeadline(time, provider, articleId, headline, extraData);
+	}
+
+	/// <summary>87: [1] request id, [2] 1 when IB has older headlines.</summary>
+	public static bool HistoricalNewsEnd(string[] fields) => new FieldReader(fields, 2).Int() == 1;
+
+	/// <summary>83: [1] request id, [2] type (0 text / HTML, 1 base64 binary), [3] text.</summary>
+	public static NewsArticle NewsArticle(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		return new NewsArticle((NewsArticleType)reader.Int(), reader.String());
+	}
+
+	/// <summary>
+	/// 84: [1] request id, [2] time in unix milliseconds, [3] provider, [4] article id,
+	/// [5] headline, [6] metadata (<c>A:800015:L:en</c>).
+	/// </summary>
+	public static NewsHeadline TickNews(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		return new NewsHeadline(
+			DateTimeOffset.FromUnixTimeMilliseconds(reader.Long()),
+			reader.String(),
+			reader.String(),
+			reader.String(),
+			reader.String()
+		);
+	}
+
 	/// <summary>50: [3] time, open, high, low, close, volume, WAP, count; empty = -1.</summary>
 	public static Bar RealTimeBar(string[] fields)
 	{

@@ -261,3 +261,41 @@ requests, no orders.
   - Everything else (`[19]`, `[22..23]`, `[26..92]`, `[94..]`; many are double max = unset):
     **not located**. Outside-hours and cash-quantity flags are not read.
 - A placed order's `3` frames also reach its `PlaceOrderAsync` stream while a `16` request runs.
+
+## News
+
+Recorded 2026-10-26 from IB Gateway (live, read-only) at versions **178** (ib_async) and **187**
+(raw requests in the 178 layouts): identical at both. The account had 8 API providers (BRFG,
+BRFUPDN, DJ-N, DJ-RT, DJ-RTA, DJ-RTE, DJ-RTG, DJNL).
+
+- C → S `85` News providers: no other fields. S → C `85` (same id): `[1]` count, then code and
+  name per provider. No request id: replies come in request order.
+- C → S `86` Historical news: `[1]` reqId, `[2]` conId, `[3]` provider codes joined by `+`,
+  `[4]` "start", `[5]` "end" (`2026-10-01 00:00:00.0` or `""`; see below), `[6]` max results,
+  `[7]` options (`""`).
+  - S → C `86` per headline, newest first: `[1]` reqId, `[2]` time `2026-10-26 13:03:00.0`
+    (UTC: the same article's news tick has that instant), `[3]` provider, `[4]` article id
+    (`DJ-N$1fa3b986`), `[5]` headline with metadata in braces in front:
+    `{A:800015:L:en}Apple Unveils …`.
+  - S → C `87` End: `[1]` reqId, `[2]` `1` when there are more.
+  - The times, probed live: `[4]` alone returns the newest headlines strictly **before** it,
+    read as **UTC** (`11:12:36` → the `11:12:00` items first, `11:11:23` → older ones). `[5]` had
+    no effect, neither as an upper bound with `[4]` empty nor as a lower bound below `[4]`. With
+    both empty, the latest headlines. The recorded 2026-10-01 … 2026-10-26 request therefore
+    returned July headlines (the newest before October 1).
+- C → S `84` News article: `[1]` reqId, `[2]` provider, `[3]` article id, `[4]` options (`""`).
+  S → C `83`: `[1]` reqId, `[2]` type (`0` text / HTML — seen both `<pre>` text and `<html>`;
+  `1` base64 binary: **not seen**), `[3]` text, HTML entities like `&#10;` included.
+- Live headlines: C → S `1` market data (see Market data) with generic ticks `mdoff,292:A+B`
+  (a contract and its providers) or `mdoff,292` (a broad tape contract). `mdoff` suppresses
+  quotes: only `81`, `58` and news came. S → C `84` TickNews: `[1]` reqId, `[2]` unix
+  milliseconds, `[3]` provider, `[4]` article id, `[5]` headline, `[6]` metadata without braces
+  (`A:800015:L:en`, `A:800015:L:en:E`). Recent headlines are replayed first, then new ones.
+- Broad tape contracts: C → S `9` contract details with security type `NEWS`, exchange = the
+  provider code, nothing else. Found: BRFG `BRFG:BRFG_ALL` (conId 100283238), BRFUPDN
+  `BRFUPDN:BRF_ALL` (99384238), DJNL `DJNL:DJNL_ALL` (219885944); the reply names security type
+  `News` and exchange `NEWS`. Subscribing with exchange `NEWS` fails with **321** "The entered
+  news source is invalid. Valid are: [BRFG, BRFUPDN, DJ, DJNL, BZ, DJTOP, FLY]"; with the
+  provider code as exchange it streams (with or without the conId). The DJ-* codes have no broad
+  tape: details fail with 321 (DJ-N) or 200; `DJ:DJ_ALL`, `DJTOP:DJTOP_ALL` gave 200.
+- Cancelling a subscription IB already rejected answers **300** "Can't find EId with tickerId".
