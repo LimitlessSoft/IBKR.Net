@@ -180,6 +180,54 @@ depth for IEX (US), PAXOS (crypto) and IDEALPRO (forex), not for NASDAQ TotalVie
   (`Deep` 294×, `Deep2` 5×, `DeepX` 5×, `AggDeep` 2×), aggregated group (`2147483647` = unset;
   `1`, `4`, `7`, `12`, `14` seen). 306 exchanges on this account.
 
+## Tick-by-tick
+
+Recorded 2026-10-26 from IB Gateway (live, read-only, US regular hours) at versions **178** and
+**187** with a raw socket probe: request and reply frames identical at both. AAPL (SMART), BTC
+(PAXOS), EUR.USD (IDEALPRO); history before BidAsk / MidPoint seen at 187 only.
+
+- C → S `97` Request (no version field): `[1]` reqId, `[2..13]` contract block (c = 2),
+  `[14]` tick type as text: `Last`, `AllLast`, `BidAsk`, `MidPoint`, `[15]` number of
+  historical ticks (`0` = live only), `[16]` ignore size `0` / `1`.
+- C → S `98` Cancel: `[1]` reqId.
+- S → C `99` Tick, one per trade or quote change: `[1]` reqId, `[2]` type (`1` Last, `2`
+  AllLast, `3` BidAsk, `4` MidPoint), `[3]` unix seconds (many ticks share a second), then
+  - Last / AllLast: `[4]` price, `[5]` size (crypto fractional), `[6]` attribute bits,
+    `[7]` exchange (`NASDAQ`, `FINRA`, `ARCA` …; `""` on PAXOS), `[8]` special conditions,
+    space separated (`""`, `F`, `I`, `F I`, `4 I`, `4 W`, `7 V`).
+  - BidAsk: `[4]` bid, `[5]` ask, `[6]` bid size, `[7]` ask size, `[8]` attribute bits.
+  - MidPoint: `[4]` midpoint (5 fields in all).
+- Attribute bits: on trades only `0` and `2` were seen, `2` on AllLast only — with odd lots
+  (`I`, 104×) and a few `4 W` trades (4×); read as "unreported", bit 0 as "past limit", after
+  IB's documentation. BidAsk: only `0` seen;
+  bit 0 "bid past low", bit 1 "ask past high" are from IB's documentation.
+- Last vs AllLast: Last had no odd lot and no attribute `2` in 538 ticks; AllLast carries them.
+- Ignore size `1` on BidAsk: only ticks where a price changes (1 tick in 2 s vs 12 without).
+- Historical ticks > 0: one frame with the recent ticks before the live `99`s, then live ticks.
+  IB sends at least the number asked, whole seconds of them (asked 3 or 5: got 11, 12, 22, 48).
+  Each ends with a done flag (`1`):
+  - S → C `98` (Last / AllLast): `[1]` reqId, `[2]` count, then per tick time, attribute bits,
+    price, size, exchange, special conditions — the conditions padded to 4 characters
+    (`" F  "`, `" 4 I"`, `"   I"`).
+  - S → C `97` (BidAsk): `[1]` reqId, `[2]` count, then per tick time, attribute bits, bid, ask,
+    bid size, ask size.
+  - S → C `96` (MidPoint): `[1]` reqId, `[2]` count, then per tick time, `0` (not located),
+    midpoint, `0` (size).
+- Two identical subscriptions (same contract and type) both stream; no error.
+- Errors (with the reqId; the stream ends), each 0.5–3 s after the request:
+  - **10190** "Max number of tick-by-tick requests has been reached." — the **6th** concurrent
+    subscription of this client (5 ran, at both versions).
+  - **10189** "Failed to request tick-by-tick data.No market data permissions for IBIS STK";
+    the same request again a minute later on another connection gave **354** "Requested market
+    data is not subscribed …" instead.
+  - **10189** "…No historical market data for EUR/CASH@FXSUBPIP Last 0" — Last / AllLast on
+    forex (forex has BidAsk and MidPoint only).
+  - **200** for an unknown contract.
+  - Cancelling a rejected request answers **300** "Can't find EId with tickerId", so the client
+    sends no cancel then.
+- Not recorded: outside regular hours, halts, ticks with attribute bit 0 (past limit / bid past
+  low) or bit 1 on BidAsk.
+
 ## Historical bars
 
 - C → S `20`: `[1]` reqId, `[2..13]` contract block (c = 2), `[14]` include expired (`0`),

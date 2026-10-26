@@ -150,10 +150,25 @@ public sealed partial class IbkrClient : IAsyncDisposable
 	}
 
 	// A subscription: decoded frames until the caller stops reading, then the IB cancel message
-	private async IAsyncEnumerable<T> StreamAsync<T>(
+	private IAsyncEnumerable<T> StreamAsync<T>(
 		Func<int, RequestBuilder> request,
 		Func<int, RequestBuilder> cancel,
 		Func<string[], T?> decode,
+		CancellationToken cancellationToken
+	)
+		where T : class =>
+		StreamManyAsync<T>(
+			request,
+			cancel,
+			fields => decode(fields) is { } item ? [item] : null,
+			cancellationToken
+		);
+
+	// A subscription whose frames may each decode to several items
+	private async IAsyncEnumerable<T> StreamManyAsync<T>(
+		Func<int, RequestBuilder> request,
+		Func<int, RequestBuilder> cancel,
+		Func<string[], IEnumerable<T>?> decode,
 		[EnumeratorCancellation] CancellationToken cancellationToken
 	)
 		where T : class

@@ -36,8 +36,11 @@ internal sealed class CollectHandler<T>(Func<string[], IEnumerable<T>?> decode, 
 	public void OnClosed(Exception error) => _result.TrySetException(error);
 }
 
-/// <summary>A subscription: every decoded frame goes to the reader until it is cancelled.</summary>
-internal sealed class StreamHandler<T>(Func<string[], T?> decode) : IRequestHandler
+/// <summary>
+/// A subscription: every decoded item goes to the reader until it is cancelled. A frame may decode
+/// to several items (tick-by-tick history) or none.
+/// </summary>
+internal sealed class StreamHandler<T>(Func<string[], IEnumerable<T>?> decode) : IRequestHandler
 	where T : class
 {
 	private readonly Channel<T> _channel = Channel.CreateUnbounded<T>(
@@ -48,8 +51,9 @@ internal sealed class StreamHandler<T>(Func<string[], T?> decode) : IRequestHand
 
 	public void OnMessage(string[] fields)
 	{
-		if (decode(fields) is { } item)
-			_channel.Writer.TryWrite(item);
+		if (decode(fields) is { } items)
+			foreach (var item in items)
+				_channel.Writer.TryWrite(item);
 	}
 
 	public void OnError(IbkrException error) => _channel.Writer.TryComplete(error);

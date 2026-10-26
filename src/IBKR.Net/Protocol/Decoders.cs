@@ -197,6 +197,140 @@ internal static class Decoders
 	}
 
 	/// <summary>
+	/// 99 (one live tick): [1] request id, [2] type (1 Last, 2 AllLast, 3 BidAsk, 4 MidPoint),
+	/// [3] unix seconds, then for trades [4] price, [5] size, [6] attribute bits, [7] exchange,
+	/// [8] special conditions; for BidAsk [4] bid, [5] ask, [6] bid size, [7] ask size,
+	/// [8] attribute bits; for MidPoint [4] midpoint.
+	/// </summary>
+	public static TickByTick TickByTick(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var type = (TickByTickType)reader.Int();
+		var time = DateTimeOffset.FromUnixTimeSeconds(reader.Long());
+		switch (type)
+		{
+			case TickByTickType.Last or TickByTickType.AllLast:
+				return TradeTick(type, time, reader, attributesFirst: false, historical: false);
+			case TickByTickType.BidAsk:
+				var bid = reader.Double();
+				var ask = reader.Double();
+				var bidSize = reader.Decimal();
+				var askSize = reader.Decimal();
+				var attributes = reader.Int();
+				return new TickByTick(type, time)
+				{
+					BidPrice = bid,
+					AskPrice = ask,
+					BidSize = bidSize,
+					AskSize = askSize,
+					BidPastLow = (attributes & 1) != 0,
+					AskPastHigh = (attributes & 2) != 0,
+				};
+			default:
+				return new TickByTick(type, time) { Price = reader.Double() };
+		}
+	}
+
+	/// <summary>
+	/// 98 (history before live trades): [1] request id, [2] count, then per tick unix seconds,
+	/// attribute bits, price, size, exchange, special conditions; then a done flag.
+	/// </summary>
+	public static IEnumerable<TickByTick> HistoricalTicksLast(string[] fields, TickByTickType type)
+	{
+		var reader = new FieldReader(fields, 2);
+		var ticks = new List<TickByTick>();
+		for (var count = reader.Int(); count > 0; count--)
+			ticks.Add(
+				TradeTick(
+					type,
+					DateTimeOffset.FromUnixTimeSeconds(reader.Long()),
+					reader,
+					attributesFirst: true,
+					historical: true
+				)
+			);
+		return ticks;
+	}
+
+	/// <summary>
+	/// 97 (history before live quotes): [1] request id, [2] count, then per tick unix seconds,
+	/// attribute bits, bid, ask, bid size, ask size; then a done flag.
+	/// </summary>
+	public static IEnumerable<TickByTick> HistoricalTicksBidAsk(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var ticks = new List<TickByTick>();
+		for (var count = reader.Int(); count > 0; count--)
+		{
+			var time = DateTimeOffset.FromUnixTimeSeconds(reader.Long());
+			var attributes = reader.Int();
+			ticks.Add(
+				new TickByTick(TickByTickType.BidAsk, time)
+				{
+					BidPrice = reader.Double(),
+					AskPrice = reader.Double(),
+					BidSize = reader.Decimal(),
+					AskSize = reader.Decimal(),
+					BidPastLow = (attributes & 1) != 0,
+					AskPastHigh = (attributes & 2) != 0,
+					IsHistorical = true,
+				}
+			);
+		}
+		return ticks;
+	}
+
+	/// <summary>
+	/// 96 (history before live midpoints): [1] request id, [2] count, then per tick unix seconds,
+	/// a field not located (<c>0</c>), midpoint, size (<c>0</c>); then a done flag.
+	/// </summary>
+	public static IEnumerable<TickByTick> HistoricalTicksMidPoint(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var ticks = new List<TickByTick>();
+		for (var count = reader.Int(); count > 0; count--)
+		{
+			var time = DateTimeOffset.FromUnixTimeSeconds(reader.Long());
+			reader.Skip();
+			ticks.Add(
+				new TickByTick(TickByTickType.MidPoint, time)
+				{
+					Price = reader.Double(),
+					IsHistorical = true,
+				}
+			);
+			reader.Skip();
+		}
+		return ticks;
+	}
+
+	// Live trades carry the attribute bits after the size, historical ones before the price
+	private static TickByTick TradeTick(
+		TickByTickType type,
+		DateTimeOffset time,
+		FieldReader reader,
+		bool attributesFirst,
+		bool historical
+	)
+	{
+		var attributes = attributesFirst ? reader.Int() : 0;
+		var price = reader.Double();
+		var size = reader.Decimal();
+		if (!attributesFirst)
+			attributes = reader.Int();
+		return new TickByTick(type, time)
+		{
+			Price = price,
+			Size = size,
+			Exchange = reader.String(),
+			SpecialConditions = reader.String().Trim(),
+			PastLimit = (attributes & 1) != 0,
+			Unreported = (attributes & 2) != 0,
+			IsHistorical = historical,
+		};
+	}
+
+	/// <summary>
 	/// 80: [1] count, then per exchange: exchange, security type, listing exchange, service data
 	/// type, aggregated group (int max = unset). No request id.
 	/// </summary>

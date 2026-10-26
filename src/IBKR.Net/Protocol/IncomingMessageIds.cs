@@ -39,6 +39,10 @@ internal static class IncomingMessageIds
 	public const string HistoricalNewsEnd = "87";
 	public const string Pnl = "94";
 	public const string PnlSingle = "95";
+	public const string HistoricalTicksMidPoint = "96";
+	public const string HistoricalTicksBidAsk = "97";
+	public const string HistoricalTicksLast = "98";
+	public const string TickByTick = "99";
 
 	/// <summary>
 	/// Where a message carries its request id, for messages tied to a request; null for the
@@ -50,6 +54,8 @@ internal static class IncomingMessageIds
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
 			HistoricalData or Pnl or PnlSingle or ExecutionData => 1,
 			NewsArticle or TickNews or HistoricalNews or HistoricalNewsEnd => 1,
+			HistoricalTicksMidPoint or HistoricalTicksBidAsk or HistoricalTicksLast or TickByTick =>
+				1,
 			OrderStatus => 1, // the order id
 			ExecutionDataEnd => 2,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,

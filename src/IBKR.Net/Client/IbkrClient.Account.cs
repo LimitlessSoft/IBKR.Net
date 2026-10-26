@@ -37,7 +37,7 @@ public sealed partial class IbkrClient
 	)
 	{
 		var handler = new StreamHandler<Position>(fields =>
-			fields[0] == IncomingMessageIds.Position ? Decoders.Position(fields) : null
+			fields[0] == IncomingMessageIds.Position ? [Decoders.Position(fields)] : null
 		);
 		AddPositionListener(handler);
 		try
