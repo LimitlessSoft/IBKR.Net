@@ -409,3 +409,26 @@ BRFUPDN, DJ-N, DJ-RT, DJ-RTA, DJ-RTE, DJ-RTG, DJNL).
   provider code as exchange it streams (with or without the conId). The DJ-* codes have no broad
   tape: details fail with 321 (DJ-N) or 200; `DJ:DJ_ALL`, `DJTOP:DJTOP_ALL` gave 200.
 - Cancelling a subscription IB already rejected answers **300** "Can't find EId with tickerId".
+
+## Wall Street Horizon
+
+Recorded 2026-10-26 from IB Gateway (live, read-only) at version **187** (ib_async as the driver,
+then IBKR.Net itself) on an account **without** the "Wall Street Horizon Corporate Event Data"
+subscription. Only the requests and the refusal were seen; the data replies were not.
+
+- C → S `100` Metadata: `[1]` reqId. C → S `101` Cancel metadata: `[1]` reqId.
+- C → S `102` Event data: `[1]` reqId, `[2]` conId (`2147483647` = unset, i.e. int max),
+  `[3]` JSON filter (`""` when a conId is given), `[4]` fill watchlist, `[5]` fill portfolio,
+  `[6]` fill competitors (`0` / `1`), `[7]` start date `yyyyMMdd`, `[8]` end date (`""` = unset),
+  `[9]` total limit (`2147483647` = unset). Filters sent (all refused the same way):
+  `{"country":"All","limit_region":10,"limit":100,"wshe_ed":"true"}`,
+  `{"country":"United States","limit":100,"wshe_ed":"true"}`,
+  `{"country":"All","watchlist":["265598"],"limit_region":10,"limit":10,"wshe_ed":"true","wshe_bod":"true"}`.
+- C → S `103` Cancel event data: `[1]` reqId.
+- Without the subscription every request (metadata and event data, by conId or by filter) is
+  answered within ~5 ms by `4` error **10276** "News feed is not allowed." for its reqId; nothing
+  else follows. The cancels sent afterwards got no answer.
+- **Not seen:** the data replies. IBKR.Net reads S → C `104` (metadata) and `105` (event data)
+  as `[1]` reqId, `[2]` the JSON document, one frame per request — the ids and layout as the
+  ib_async client (BSD, not IB code) decodes them; to be confirmed with a recording on an
+  account with the subscription. The JSON's shape is not known from the wire either.

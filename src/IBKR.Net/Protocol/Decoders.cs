@@ -35,6 +35,13 @@ internal static class Decoders
 		);
 	}
 
+	/// <summary>
+	/// 104 / 105 (not seen on the wire yet): [1] request id, then the JSON document. Read as the
+	/// first non-empty field after the id, so a version field in front would not break it.
+	/// </summary>
+	public static string WshData(string[] fields) =>
+		fields.Skip(2).FirstOrDefault(x => x.Length > 0) ?? string.Empty;
+
 	/// <summary>15: [2] comma-separated accounts, with a trailing comma.</summary>
 	public static IReadOnlyList<string> ManagedAccounts(string[] fields) =>
 		new FieldReader(fields, 2).String().Split(',', StringSplitOptions.RemoveEmptyEntries);

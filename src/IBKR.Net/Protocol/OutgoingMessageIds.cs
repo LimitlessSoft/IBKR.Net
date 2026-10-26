@@ -33,4 +33,8 @@ internal static class OutgoingMessageIds
 	public const string CancelPnlSingle = "95";
 	public const string RequestTickByTick = "97";
 	public const string CancelTickByTick = "98";
+	public const string RequestWshMetaData = "100";
+	public const string CancelWshMetaData = "101";
+	public const string RequestWshEventData = "102";
+	public const string CancelWshEventData = "103";
 }

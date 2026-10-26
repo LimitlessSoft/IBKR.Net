@@ -44,6 +44,10 @@ internal static class IncomingMessageIds
 	public const string HistoricalTicksLast = "98";
 	public const string TickByTick = "99";
 
+	// Not seen on the wire yet (no WSH subscription when recording); see docs/protocol.md
+	public const string WshMetaData = "104";
+	public const string WshEventData = "105";
+
 	/// <summary>
 	/// Where a message carries its request id, for messages tied to a request; null for the
 	/// others (current time, positions, managed accounts …).
@@ -56,6 +60,7 @@ internal static class IncomingMessageIds
 			NewsArticle or TickNews or HistoricalNews or HistoricalNewsEnd => 1,
 			HistoricalTicksMidPoint or HistoricalTicksBidAsk or HistoricalTicksLast or TickByTick =>
 				1,
+			WshMetaData or WshEventData => 1,
 			OrderStatus => 1, // the order id
 			ExecutionDataEnd => 2,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
