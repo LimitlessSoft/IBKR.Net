@@ -83,3 +83,50 @@ internal sealed class OrderHandler(Action onDone) : IRequestHandler
 
 	public void OnClosed(Exception error) => _channel.Writer.TryComplete(error);
 }
+
+/// <summary>
+/// reqAllOpenOrders: open order frames, each followed by its status, until the end frame. Status
+/// frames go to placed orders' handlers too, so a status is matched to its order by perm, client
+/// and order id rather than routed by id.
+/// </summary>
+internal sealed class OpenOrdersHandler : IRequestHandler
+{
+	private readonly List<OpenOrder> _orders = [];
+	private readonly Dictionary<(long, int, int), OrderStatus> _statuses = [];
+	private readonly TaskCompletionSource<IReadOnlyList<OpenOrder>> _result = new(
+		TaskCreationOptions.RunContinuationsAsynchronously
+	);
+
+	public Task<IReadOnlyList<OpenOrder>> Result => _result.Task;
+
+	public void OnMessage(string[] fields)
+	{
+		switch (fields[0])
+		{
+			case Protocol.IncomingMessageIds.OpenOrder:
+				_orders.Add(Protocol.Decoders.OpenOrder(fields));
+				break;
+			case Protocol.IncomingMessageIds.OrderStatus:
+				var status = Protocol.Decoders.OrderStatus(fields);
+				_statuses[(status.PermId, status.ClientId, status.OrderId)] = status;
+				break;
+			case Protocol.IncomingMessageIds.OpenOrderEnd:
+				_result.TrySetResult([.. _orders.Select(WithStatus)]);
+				break;
+		}
+	}
+
+	public void OnError(IbkrException error) => _result.TrySetException(error);
+
+	public void OnClosed(Exception error) => _result.TrySetException(error);
+
+	private OpenOrder WithStatus(OpenOrder order) =>
+		_statuses.TryGetValue((order.PermId, order.ClientId, order.OrderId), out var status)
+			? order with
+			{
+				Status = status.Status,
+				Filled = status.Filled,
+				Remaining = status.Remaining,
+			}
+			: order;
+}

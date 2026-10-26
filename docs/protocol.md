@@ -228,12 +228,36 @@ order fields that have not been seen, so the library places orders only on a con
   ignored.
 - Before the first crypto order, IB Gateway shows a "Cryptocurrency order confirmation" dialog
   and holds the order (no reply) until someone clicks it.
-- Open order (`5`), execution and commission frames: **not seen yet** (no order was accepted).
+- Open order (`5`) frames: see "Open orders" below. Execution and commission frames: **not seen
+  yet** (nothing filled).
 
 ## Orders and executions (read-only)
 
-- C → S `5` Open orders: `[1]` 1. S → C `53` OpenOrderEnd: `[1]` 1. Order frames themselves:
-  **not seen yet** (no open orders when recorded).
+- C → S `5` Open orders: `[1]` 1. Answers only the asking client id's orders: with one working
+  order placed by client 101, a client 77 got `53` alone. S → C `53` OpenOrderEnd: `[1]` 1.
 - C → S `7` Executions: `[1]` 3, `[2]` reqId, `[3]` client id filter (`0`), `[4..9]` account,
   time, symbol, security type, exchange, side filters (all `""`). S → C `55` End: `[1]` 1,
   `[2]` reqId. Execution / commission frames: **not seen yet** (no fills that day).
+
+## Open orders
+
+Recorded 2026-10-26 from IB Gateway (live) at versions **178** and **187**, with one working
+order (BUY 1 VOW, LMT 66, DAY) placed by another client (101); the asking client sent only
+requests, no orders.
+
+- C → S `16` All open orders: `[1]` 1. Every client's and TWS's working orders. The reply: for
+  each order a `5` frame, then its `3` order status; then `53` `[1]` 1.
+- S → C `5` Open order, 135 fields at 178, 138 at 187; `[0..134]` were identical at both
+  versions, 187 appends 3 fields (`""`, `0`, `""`). Located by matching the values of the order:
+  - `[1]` order id (the placing client's), `[2..12]` contract: conId, symbol, security type, last
+    trade date, strike (`0`), right (`?` for a stock), multiplier, exchange (`SMART`), currency,
+    local symbol, trading class — the same 11 fields as the position frame `61`
+  - `[13]` action, `[14]` quantity, `[15]` order type, `[16]` limit price (`66.0`), `[17]` aux
+    price (`0.0` on a limit order: read as unset), `[18]` time in force, `[20]` account
+  - `[21]` `O` (as sent in placeOrder `[24]`), `[24]` client id, `[25]` perm id (also in the `3`
+    frame `[6]`), `[30]` `<permId>.0/<account>/100`
+  - `[93]` `Submitted`: the status again, but after fields not located yet; a variable-length
+    block before it would move it, so the status is taken from the `3` frame.
+  - Everything else (`[19]`, `[22..23]`, `[26..92]`, `[94..]`; many are double max = unset):
+    **not located**. Outside-hours and cash-quantity flags are not read.
+- A placed order's `3` frames also reach its `PlaceOrderAsync` stream while a `16` request runs.

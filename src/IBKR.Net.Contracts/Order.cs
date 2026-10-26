@@ -57,6 +57,23 @@ public sealed record OrderStatus(
 }
 
 /// <summary>
+/// A working order of any client or of TWS (reqAllOpenOrders). <see cref="Order"/> carries the
+/// side, quantity, type, prices, time in force and account; its outside-hours and cash-quantity
+/// flags are not read yet. <see cref="OrderId"/> is the placing client's id, 0 for TWS orders:
+/// <see cref="PermId"/> identifies an order across clients.
+/// </summary>
+public sealed record OpenOrder(
+	int OrderId,
+	int ClientId,
+	long PermId,
+	Contract Contract,
+	Order Order,
+	string Status,
+	decimal Filled,
+	decimal Remaining
+);
+
+/// <summary>
 /// An order that was sent: its id (to cancel it) and its status updates until it is done. A
 /// rejection (e.g. 460 "No trading permissions") fails <see cref="Statuses"/> with an
 /// <c>IbkrException</c>. Stopping reading never cancels the order.

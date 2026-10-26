@@ -202,21 +202,44 @@ internal static class Decoders
 	{
 		var reader = new FieldReader(fields, 2);
 		var account = reader.String();
-		var contract = new Contract
-		{
-			ConId = reader.Int(),
-			Symbol = reader.String(),
-			SecurityType = reader.String(),
-			LastTradeDateOrContractMonth = reader.String(),
-			Strike = reader.NullableDouble() is > 0 and var strike ? strike : null,
-			Right = reader.String(),
-			Multiplier = reader.String(),
-			Exchange = reader.String(),
-			Currency = reader.String(),
-			LocalSymbol = reader.String(),
-			TradingClass = reader.String(),
-		};
+		var contract = ReadContract(reader);
 		return new Position(account, contract, reader.Decimal(), reader.Double());
+	}
+
+	/// <summary>
+	/// 5 (versions 178 and 187): [1] order id, [2..12] the contract (as in 61), [13] action,
+	/// [14] quantity, [15] order type, [16] limit price, [17] aux price, [18] time in force,
+	/// [20] account, [24] client id, [25] perm id. The later fields are not read (see
+	/// docs/protocol.md); status, filled and remaining come from the 3 frame that follows.
+	/// </summary>
+	public static OpenOrder OpenOrder(string[] fields)
+	{
+		var reader = new FieldReader(fields, 1);
+		var orderId = reader.Int();
+		var contract = ReadContract(reader);
+		var action = reader.String();
+		var quantity = reader.Decimal();
+		var orderType = reader.String();
+		var limitPrice = reader.NullableDouble();
+		var auxPrice = reader.NullableDouble();
+		var timeInForce = reader.String();
+		reader.Skip();
+		var account = reader.String();
+		reader.Skip(3);
+		var clientId = reader.Int();
+		var permId = reader.Long();
+		var order = new Order
+		{
+			Action = action,
+			Quantity = quantity,
+			OrderType = orderType,
+			// An LMT order came with aux price 0.0: zero is "not set" for both prices
+			LimitPrice = limitPrice is 0 ? null : limitPrice,
+			AuxPrice = auxPrice is 0 ? null : auxPrice,
+			TimeInForce = timeInForce,
+			Account = account,
+		};
+		return new OpenOrder(orderId, clientId, permId, contract, order, "", 0, quantity);
 	}
 
 	/// <summary>63: [3] account, tag, value, currency.</summary>
@@ -249,6 +272,23 @@ internal static class Decoders
 			reader.NullableDouble()
 		);
 	}
+
+	// The 11-field contract of positions and open orders; a stock's right comes as "?"
+	private static Contract ReadContract(FieldReader reader) =>
+		new()
+		{
+			ConId = reader.Int(),
+			Symbol = reader.String(),
+			SecurityType = reader.String(),
+			LastTradeDateOrContractMonth = reader.String(),
+			Strike = reader.NullableDouble() is > 0 and var strike ? strike : null,
+			Right = reader.String() is var right and not "?" ? right : string.Empty,
+			Multiplier = reader.String(),
+			Exchange = reader.String(),
+			Currency = reader.String(),
+			LocalSymbol = reader.String(),
+			TradingClass = reader.String(),
+		};
 
 	// With date format 2, intraday bars come as unix seconds and daily and longer ones as yyyyMMdd
 	private static DateTimeOffset BarTime(string value) =>

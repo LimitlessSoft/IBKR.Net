@@ -5,6 +5,10 @@ namespace IBKR.Net;
 
 public sealed partial class IbkrClient
 {
+	// reqAllOpenOrders has no request id: the one running request hears every order frame
+	private readonly SemaphoreSlim _openOrdersGate = new(1, 1);
+	private volatile OpenOrdersHandler? _openOrders;
+
 	/// <summary>
 	/// The protocol version orders work at: connect with
 	/// <see cref="IbkrClientOptions.MaxServerVersion"/> set to it to place and cancel orders.
@@ -50,6 +54,35 @@ public sealed partial class IbkrClient
 	{
 		EnsureOrderVersion();
 		return _connection.SendAsync(OrderEncoder.CancelOrder(orderId), cancellationToken);
+	}
+
+	/// <summary>
+	/// Every working order of the login, whichever client or TWS placed it (reqAllOpenOrders),
+	/// with its status. Read at protocol versions 178 and 187. One request runs at a time: IB's
+	/// reply carries no request id.
+	/// </summary>
+	public async Task<IReadOnlyList<OpenOrder>> GetOpenOrdersAsync(
+		CancellationToken cancellationToken = default
+	)
+	{
+		await _openOrdersGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+		var handler = new OpenOrdersHandler();
+		_openOrders = handler;
+		try
+		{
+			await _connection
+				.SendAsync(
+					new RequestBuilder(OutgoingMessageIds.RequestAllOpenOrders).Add(1).Build(),
+					cancellationToken
+				)
+				.ConfigureAwait(false);
+			return await handler.Result.WaitAsync(cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			_openOrders = null;
+			_openOrdersGate.Release();
+		}
 	}
 
 	private void EnsureOrderVersion()

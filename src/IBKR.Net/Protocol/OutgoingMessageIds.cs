@@ -9,6 +9,7 @@ internal static class OutgoingMessageIds
 	public const string CancelOrder = "4";
 	public const string RequestExecutions = "7";
 	public const string RequestContractDetails = "9";
+	public const string RequestAllOpenOrders = "16";
 	public const string RequestHistoricalData = "20";
 	public const string RequestCurrentTime = "49";
 	public const string RequestRealTimeBars = "50";
