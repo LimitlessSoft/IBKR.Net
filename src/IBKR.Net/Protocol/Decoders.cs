@@ -303,6 +303,63 @@ internal static class Decoders
 		return new OpenOrder(orderId, clientId, permId, contract, order, "", 0, quantity);
 	}
 
+	/// <summary>
+	/// 11 (versions 178 and 187): [1] request id, [2] order id, [3..13] the contract (as in 61),
+	/// [14] exec id, [15] time (<c>20261026 10:00:59 US/Eastern</c>), [16] account, [17] exchange,
+	/// [18] side (BOT / SLD), [19] shares, [20] price, [21] perm id, [22] client id,
+	/// [24] cumulative quantity, [25] average price, [26] order ref. [23], [27..] are not read.
+	/// </summary>
+	public static Execution Execution(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var orderId = reader.Int();
+		var contract = ReadContract(reader);
+		var execId = reader.String();
+		var time = reader.String();
+		var account = reader.String();
+		var exchange = reader.String();
+		var side = reader.String();
+		var shares = reader.Decimal();
+		var price = reader.Double();
+		var permId = reader.Long();
+		var clientId = reader.Int();
+		reader.Skip();
+		return new Execution(
+			execId,
+			orderId,
+			clientId,
+			permId,
+			contract,
+			account,
+			exchange,
+			side,
+			shares,
+			price,
+			reader.Decimal(),
+			reader.Double(),
+			reader.String()
+		)
+		{
+			Time = ExecutionTime(time),
+			TimeText = time,
+		};
+	}
+
+	/// <summary>
+	/// 59: [2] exec id, [3] commission, [4] currency, [5] realized P&amp;L (double max = unset).
+	/// [6], [7] (double max, <c>""</c>) are not read.
+	/// </summary>
+	public static CommissionReport CommissionReport(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		return new CommissionReport(
+			reader.String(),
+			reader.Double(),
+			reader.String(),
+			reader.NullableDouble()
+		);
+	}
+
 	/// <summary>63: [3] account, tag, value, currency.</summary>
 	public static AccountValue AccountSummary(string[] fields)
 	{
@@ -334,7 +391,39 @@ internal static class Decoders
 		);
 	}
 
-	// The 11-field contract of positions and open orders; a stock's right comes as "?"
+	// "yyyyMMdd HH:mm:ss Zone", the zone an IANA id (US/Eastern); null when it is unknown here
+	private static DateTimeOffset? ExecutionTime(string value)
+	{
+		var parts = value.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+		if (
+			parts.Length != 3
+			|| !DateTime.TryParseExact(
+				$"{parts[0]} {parts[1]}",
+				"yyyyMMdd HH:mm:ss",
+				CultureInfo.InvariantCulture,
+				DateTimeStyles.None,
+				out var local
+			)
+			|| !(
+				TimeZoneInfo.TryFindSystemTimeZoneById(parts[2], out var zone)
+				|| CanonicalZones.TryGetValue(parts[2], out var canonical)
+					&& TimeZoneInfo.TryFindSystemTimeZoneById(canonical, out zone)
+			)
+		)
+			return null;
+		return new DateTimeOffset(local, zone.GetUtcOffset(local));
+	}
+
+	// IB names US zones by their legacy ids, which newer tzdata (Debian 13) no longer ships
+	private static readonly Dictionary<string, string> CanonicalZones = new()
+	{
+		["US/Eastern"] = "America/New_York",
+		["US/Central"] = "America/Chicago",
+		["US/Mountain"] = "America/Denver",
+		["US/Pacific"] = "America/Los_Angeles",
+	};
+
+	// The 11-field contract of positions, open orders and executions; a stock's right comes as "?"
 	private static Contract ReadContract(FieldReader reader) =>
 		new()
 		{

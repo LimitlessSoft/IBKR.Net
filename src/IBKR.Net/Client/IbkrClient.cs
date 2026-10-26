@@ -121,15 +121,27 @@ public sealed partial class IbkrClient : IAsyncDisposable
 		CancellationToken cancellationToken
 	)
 	{
-		var id = NextRequestId();
 		var handler = new CollectHandler<T>(decode, endMessageId);
+		return await RequestAsync(request, handler, handler.Result, cancellationToken)
+			.ConfigureAwait(false);
+	}
+
+	// A one-shot request whose handler completes result
+	private async Task<T> RequestAsync<T>(
+		Func<int, RequestBuilder> request,
+		IRequestHandler handler,
+		Task<T> result,
+		CancellationToken cancellationToken
+	)
+	{
+		var id = NextRequestId();
 		_requests[id] = handler;
 		try
 		{
 			await _connection
 				.SendAsync(request(id).Build(), cancellationToken)
 				.ConfigureAwait(false);
-			return await handler.Result.WaitAsync(cancellationToken).ConfigureAwait(false);
+			return await result.WaitAsync(cancellationToken).ConfigureAwait(false);
 		}
 		finally
 		{
@@ -213,6 +225,11 @@ public sealed partial class IbkrClient : IAsyncDisposable
 			case IncomingMessageIds.OrderStatus:
 				_openOrders?.OnMessage(fields); // and on to the placed order's handler
 				break;
+			case IncomingMessageIds.CommissionReport:
+				foreach (var request in _requests.Values)
+					if (request is ExecutionsHandler executions)
+						executions.OnMessage(fields);
+				return;
 		}
 
 		if (

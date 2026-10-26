@@ -85,6 +85,33 @@ public sealed partial class IbkrClient
 		}
 	}
 
+	/// <summary>
+	/// The login's fills of the day, of every account, client and TWS (reqExecutions without
+	/// filters), each with its commission report. Read at protocol versions 178 and 187.
+	/// </summary>
+	public Task<IReadOnlyList<Execution>> GetExecutionsAsync(
+		CancellationToken cancellationToken = default
+	)
+	{
+		var handler = new ExecutionsHandler();
+		return RequestAsync(
+			id =>
+				new RequestBuilder(OutgoingMessageIds.RequestExecutions)
+					.Add(3)
+					.Add(id)
+					.Add(0) // client id filter: every client
+					.Add(string.Empty) // account
+					.Add(string.Empty) // time
+					.Add(string.Empty) // symbol
+					.Add(string.Empty) // security type
+					.Add(string.Empty) // exchange
+					.Add(string.Empty), // side
+			handler,
+			handler.Result,
+			cancellationToken
+		);
+	}
+
 	private void EnsureOrderVersion()
 	{
 		if (ServerVersion != OrderProtocolVersion)

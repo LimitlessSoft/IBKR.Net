@@ -130,3 +130,47 @@ internal sealed class OpenOrdersHandler : IRequestHandler
 			}
 			: order;
 }
+
+/// <summary>
+/// reqExecutions: execution frames until the end frame. Commission reports carry no request id,
+/// only the exec id, so every running request hears them and keeps those of its own fills.
+/// </summary>
+internal sealed class ExecutionsHandler : IRequestHandler
+{
+	private readonly List<Execution> _executions = [];
+	private readonly Dictionary<string, CommissionReport> _commissions = [];
+	private readonly TaskCompletionSource<IReadOnlyList<Execution>> _result = new(
+		TaskCreationOptions.RunContinuationsAsynchronously
+	);
+
+	public Task<IReadOnlyList<Execution>> Result => _result.Task;
+
+	public void OnMessage(string[] fields)
+	{
+		switch (fields[0])
+		{
+			case Protocol.IncomingMessageIds.ExecutionData:
+				_executions.Add(Protocol.Decoders.Execution(fields));
+				break;
+			case Protocol.IncomingMessageIds.CommissionReport:
+				var report = Protocol.Decoders.CommissionReport(fields);
+				_commissions[report.ExecId] = report;
+				break;
+			case Protocol.IncomingMessageIds.ExecutionDataEnd:
+				_result.TrySetResult([.. _executions.Select(WithCommission)]);
+				break;
+		}
+	}
+
+	public void OnError(IbkrException error) => _result.TrySetException(error);
+
+	public void OnClosed(Exception error) => _result.TrySetException(error);
+
+	private Execution WithCommission(Execution execution) =>
+		_commissions.TryGetValue(execution.ExecId, out var report)
+			? execution with
+			{
+				Commission = report,
+			}
+			: execution;
+}

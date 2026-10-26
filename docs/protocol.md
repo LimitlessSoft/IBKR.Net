@@ -228,8 +228,8 @@ order fields that have not been seen, so the library places orders only on a con
   ignored.
 - Before the first crypto order, IB Gateway shows a "Cryptocurrency order confirmation" dialog
   and holds the order (no reply) until someone clicks it.
-- Open order (`5`) frames: see "Open orders" below. Execution and commission frames: **not seen
-  yet** (nothing filled).
+- Open order (`5`) frames: see "Open orders" below. Execution and commission frames: see
+  "Executions".
 
 ## Orders and executions (read-only)
 
@@ -237,7 +237,7 @@ order fields that have not been seen, so the library places orders only on a con
   order placed by client 101, a client 77 got `53` alone. S → C `53` OpenOrderEnd: `[1]` 1.
 - C → S `7` Executions: `[1]` 3, `[2]` reqId, `[3]` client id filter (`0`), `[4..9]` account,
   time, symbol, security type, exchange, side filters (all `""`). S → C `55` End: `[1]` 1,
-  `[2]` reqId. Execution / commission frames: **not seen yet** (no fills that day).
+  `[2]` reqId. Execution / commission frames: see "Executions".
 
 ## Open orders
 
@@ -261,6 +261,31 @@ requests, no orders.
   - Everything else (`[19]`, `[22..23]`, `[26..92]`, `[94..]`; many are double max = unset):
     **not located**. Outside-hours and cash-quantity flags are not read.
 - A placed order's `3` frames also reach its `PlaceOrderAsync` stream while a `16` request runs.
+
+## Executions
+
+Recorded 2026-10-26 from IB Gateway (live) at versions **178** and **187**, frames identical at
+both, with four fills of the day (SPY options bought and sold from TWS); the asking client sent
+only requests.
+
+- C → S `7` (as above, all filters empty) answers with every fill of the day: each `11`, then a
+  `59` per fill, then `55` `[1]` 1, `[2]` reqId. The fills came from TWS orders, not the asking
+  client's.
+- S → C `11` Execution, 32 fields. Located by matching the values of the fills:
+  - `[1]` reqId, `[2]` order id (`0` for a TWS order)
+  - `[3..13]` contract: the same 11 fields as the position frame `61` (exchange = the fill's
+    exchange, e.g. `CBOE`; right `P` / `C`)
+  - `[14]` exec id (`0000e001.00000001.01.01`), `[15]` time `20261026 10:00:59 US/Eastern`
+    (local time and an IANA zone id; legacy `US/*` ids are missing from newer tzdata, so the
+    decoder maps them to `America/*`), `[16]` account, `[17]` exchange again
+  - `[18]` side `BOT` / `SLD`, `[19]` shares, `[20]` price, `[21]` perm id, `[22]` client id
+    (`0`), `[24]` cumulative quantity, `[25]` average price, `[26]` order ref (`OptionChain` on
+    some TWS orders, `""` on others)
+  - `[23]` (`0`), `[27..29]` (`""`), `[30]` (`1` / `2`), `[31]` (`0`): **not located**.
+- S → C `59` Commission report: `[1]` 1, `[2]` exec id (matches an `11`), `[3]` commission,
+  `[4]` currency, `[5]` realized P&L (double max on an opening fill), `[6]` double max, `[7]`
+  `""` (not located). No request id: arrived after the request's `11` frames and before its
+  `55`.
 
 ## News
 

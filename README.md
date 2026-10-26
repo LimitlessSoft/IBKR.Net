@@ -40,7 +40,7 @@ await foreach (var tick in client.SubscribeMarketDataAsync(spy))
 Streams cancel their IB request when you stop reading; errors IB reports for a request throw
 `IbkrException`, informational messages arrive on `client.Notice`.
 
-## What it covers (0.4.0)
+## What it covers (0.5.0)
 
 | `IbkrClient` | IB request |
 |---|---|
@@ -56,6 +56,7 @@ Streams cancel their IB request when you stop reading; errors IB reports for a r
 | `SubscribeAccountPnlAsync`, `SubscribePositionPnlAsync` | `reqPnL`, `reqPnLSingle` |
 | `PlaceOrderAsync`, `CancelOrderAsync` (version 178 only) | `placeOrder`, `cancelOrder` |
 | `GetOpenOrdersAsync` | `reqAllOpenOrders` |
+| `GetExecutionsAsync` | `reqExecutions` with commission reports |
 | `GetNewsProvidersAsync`, `GetHistoricalNewsAsync`, `GetNewsArticleAsync` | `reqNewsProviders`, `reqHistoricalNews`, `reqNewsArticle` |
 | `SubscribeNewsAsync`, `GetBroadTapeContractsAsync` | `reqMktData` news ticks (292), broad tape contracts |
 
@@ -64,7 +65,7 @@ It speaks protocol version 187 (text messages), which current TWS / IB Gateway s
 Orders trade for real on a live account. They need a connection capped at
 `IbkrClient.OrderProtocolVersion` (178); modifying an order and what-if orders are not built.
 
-**Not yet:** executions and commission reports, market depth, tick-by-tick data, option greeks,
+**Not yet:** market depth, tick-by-tick data, option greeks,
 scanners.
 
 ## Building

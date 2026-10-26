@@ -10,6 +10,7 @@ internal static class IncomingMessageIds
 	public const string OpenOrder = "5";
 	public const string NextValidId = "9";
 	public const string ContractData = "10";
+	public const string ExecutionData = "11";
 	public const string ManagedAccounts = "15";
 	public const string HistoricalData = "17";
 	public const string TickGeneric = "45";
@@ -18,7 +19,9 @@ internal static class IncomingMessageIds
 	public const string CurrentTime = "49";
 	public const string ContractDataEnd = "52";
 	public const string OpenOrderEnd = "53";
+	public const string ExecutionDataEnd = "55";
 	public const string MarketDataType = "58";
+	public const string CommissionReport = "59";
 	public const string Position = "61";
 	public const string PositionEnd = "62";
 	public const string AccountSummary = "63";
@@ -42,9 +45,10 @@ internal static class IncomingMessageIds
 		messageId switch
 		{
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
-			HistoricalData or Pnl or PnlSingle => 1,
+			HistoricalData or Pnl or PnlSingle or ExecutionData => 1,
 			NewsArticle or TickNews or HistoricalNews or HistoricalNewsEnd => 1,
 			OrderStatus => 1, // the order id
+			ExecutionDataEnd => 2,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
 			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,
 			_ => null,
