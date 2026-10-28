@@ -250,6 +250,34 @@ Recorded 2026-10-26 from IB Gateway (live, read-only, US regular hours) at versi
 - Not recorded: outside regular hours, halts, ticks with attribute bit 0 (past limit / bid past
   low) or bit 1 on BidAsk.
 
+## Historical ticks
+
+Recorded 2026-10-28 from IB Gateway (live, read-only, US regular hours) at versions **178** and
+**187** with ib_async as the driver: request and reply frames identical at both. AAPL (SMART),
+EUR.USD (IDEALPRO).
+
+- C → S `96` Request (no version field): `[1]` reqId, `[2..13]` contract block (c = 2),
+  `[14]` include expired (`0`), `[15]` start, `[16]` end — one of them set, the other `""`;
+  `yyyyMMdd HH:mm:ss UTC` (`20261028 14:53:26 UTC`) — `[17]` number of ticks, `[18]` what to
+  show: `TRADES`, `BID_ASK`, `MIDPOINT`, `[19]` regular trading hours only `0` / `1`, `[20]`
+  ignore size `0` / `1`, `[21]` misc options (`""`).
+- No cancel message is sent; the answer comes within 0.1–0.5 s.
+- S → C: one frame, the same layouts as the history before tick-by-tick (see
+  [Tick-by-tick](#tick-by-tick)), ending with the done flag `1` (never `0` in 26 frames):
+  `98` for `TRADES`, `97` for `BID_ASK`, `96` for `MIDPOINT`. Ticks are oldest first.
+- With an end: the ticks strictly before it, at least the number asked, whole seconds of them
+  (asked 1000: 1003–1073; asked 5: 17–35). With a start: the ticks from it on, inclusive (start
+  13:30:00 UTC, asked 20: 398, all at 13:30:00). Paging back with the oldest tick's time as the
+  next end continues with neither overlap nor gap (8 pages checked).
+- `TRADES` carries odd lots (attribute `2`, condition `I`) and conditions padded to 4
+  characters, like AllLast. AAPL at 10:50 New York: ~1000 trades per 25–35 s; eight 1000-tick
+  pages back to back each answered in 0.2–0.3 s, no pacing error.
+- `TRADES` on EUR.USD (IDEALPRO) returned 12 ticks (no error), `BID_ASK` 39.
+- A weekend end (Saturday 12:00 UTC) returns the Friday evening's last trades.
+- Errors (with the reqId, no data frame): **10187** "Failed to request historical ticks:Max
+  length exceeded" (1001 ticks asked), **10187** "…No market data permissions for IBIS STK"
+  (VOW), **200** unknown contract.
+
 ## Historical bars
 
 - C → S `20`: `[1]` reqId, `[2..13]` contract block (c = 2), `[14]` include expired (`0`),

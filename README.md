@@ -62,6 +62,7 @@ Streams cancel their IB request when you stop reading; errors IB reports for a r
 | `SubscribeNewsAsync`, `GetBroadTapeContractsAsync` | `reqMktData` news ticks (292), broad tape contracts |
 | `SubscribeMarketDepthAsync`, `GetMarketDepthExchangesAsync` | `reqMktDepth` (one exchange, Level 2, SMART depth), `reqMktDepthExchanges` |
 | `SubscribeTickByTickAsync` | `reqTickByTickData` (Last, AllLast, BidAsk, MidPoint; optional history first) |
+| `GetHistoricalTicksAsync` | `reqHistoricalTicks` (trades, bid / ask or midpoint, up to 1000 a request, before an end or from a start) |
 | `GetWshMetaDataAsync`, `GetWshEventDataAsync` | `reqWshMetaData`, `reqWshEventData` (Wall Street Horizon corporate events as JSON; needs IB's WSH subscription, else error 10276) |
 
 It speaks protocol version 187 (text messages), which current TWS / IB Gateway still accept.
