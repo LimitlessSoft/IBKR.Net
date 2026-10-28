@@ -143,6 +143,28 @@ they are not needed yet and are skipped.
 Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 4 last, 5 last size, 6 high, 7 low,
 8 volume, 9 close, 45 last timestamp, 49 halted. Sizes may be fractional (crypto: `0.00039253`).
 
+## Market data snapshot
+
+Recorded read-only on IB Gateway (live) at version 187, 2026-10-28, 07:28–07:33 New York
+(pre-market), for AAPL, MSFT and SPY (SMART) and VOW3 (IBIS, not subscribed).
+
+- C → S `1` as in Market data with `[16]` generic ticks `""`, `[17]` snapshot `1`, `[18]`
+  regulatory snapshot `0` (a regulatory snapshot is charged per request; never sent).
+- S → C: `81`, `58`, then the price / size / string / generic ticks as for a stream, all within
+  ~5 ms of the request; then, **10.9–12.0 s after the request**, `57` TickSnapshotEnd: `[1]` 1,
+  `[2]` reqId. Every snapshot took that long, alone or six at once, live or delayed type.
+- After `57` the request is gone: a `2` cancel for it is answered `300` "Can't find EId with
+  tickerId:…".
+- Generic ticks with a snapshot: `4` error **321** "Error validating request.-'bL' : cause -
+  Snapshot market data subscription is not applicable to generic ticks" within 6 ms.
+- Not subscribed (VOW3 IBIS, live or delayed type): **10090** "Part of requested market data is
+  not subscribed. Subscription-independent ticks are still active.…" then **354** "Requested
+  market data is not subscribed…", no ticks, no `57`.
+- **Lines:** with streaming `1` requests opened until IB refused one with **101** "Max number of
+  tickers has been reached" (the account had 23 free lines then), six snapshots at once were all
+  served (ticks and `57`), and a stream opened while they ran was accepted. A running snapshot
+  did not count against the line limit.
+
 ## Market depth
 
 Recorded 2026-10-26 from IB Gateway (live, read-only) at versions **178** (ib_async) and **187**

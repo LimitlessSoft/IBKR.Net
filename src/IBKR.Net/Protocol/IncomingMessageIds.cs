@@ -22,6 +22,7 @@ internal static class IncomingMessageIds
 	public const string ContractDataEnd = "52";
 	public const string OpenOrderEnd = "53";
 	public const string ExecutionDataEnd = "55";
+	public const string TickSnapshotEnd = "57";
 	public const string MarketDataType = "58";
 	public const string CommissionReport = "59";
 	public const string Position = "61";
@@ -62,7 +63,7 @@ internal static class IncomingMessageIds
 				1,
 			WshMetaData or WshEventData => 1,
 			OrderStatus => 1, // the order id
-			ExecutionDataEnd => 2,
+			ExecutionDataEnd or TickSnapshotEnd => 2,
 			Error or ContractDataEnd or MarketDataType or AccountSummary or AccountSummaryEnd => 2,
 			TickPrice or TickSize or TickGeneric or TickString or RealTimeBar => 2,
 			MarketDepth or MarketDepthL2 => 2,
