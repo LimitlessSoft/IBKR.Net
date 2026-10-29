@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Globalization;
 using IBKR.Net.Client;
 using IBKR.Net.Protocol;
 
@@ -8,6 +10,9 @@ public sealed partial class IbkrClient
 	// reqAllOpenOrders has no request id: the one running request hears every order frame
 	private readonly SemaphoreSlim _openOrdersGate = new(1, 1);
 	private volatile OpenOrdersHandler? _openOrders;
+
+	// Modifications waiting for IB's answer, by order id: one at a time per order
+	private readonly ConcurrentDictionary<int, TaskCompletionSource> _modifications = new();
 
 	/// <summary>
 	/// The protocol version orders work at: connect with
@@ -44,6 +49,50 @@ public sealed partial class IbkrClient
 			throw;
 		}
 		return new PlacedOrder(id, handler.Reader.ReadAllAsync());
+	}
+
+	/// <summary>
+	/// Changes a working order: placeOrder re-sent with the order's id. <paramref name="order"/>
+	/// replaces the order as a whole, so pass every field as it should stay (side, quantity, type,
+	/// time in force, account, outside-hours flag) with the new price. IB takes it only from the
+	/// client that placed the order. This trades for real on a live account. Needs a connection at
+	/// <see cref="OrderProtocolVersion"/>.
+	/// <para>
+	/// Completes when IB answers with an open order or order status frame for the order id; a
+	/// refusal (an error for the order id) throws <see cref="IbkrException"/> and leaves the order
+	/// as it was: an earlier <see cref="PlaceOrderAsync"/> stream of it is not failed. One
+	/// modification per order at a time. Built from the placeOrder layout; a modification's
+	/// answer has not been seen on the wire yet, so pass a cancellation token with a timeout.
+	/// </para>
+	/// </summary>
+	public async Task ModifyOrderAsync(
+		int orderId,
+		Contract contract,
+		Order order,
+		CancellationToken cancellationToken = default
+	)
+	{
+		ArgumentOutOfRangeException.ThrowIfNegativeOrZero(orderId);
+		ArgumentNullException.ThrowIfNull(contract);
+		ArgumentNullException.ThrowIfNull(order);
+		EnsureOrderVersion();
+
+		var answer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+		if (!_modifications.TryAdd(orderId, answer))
+			throw new InvalidOperationException(
+				$"Order {orderId} has a modification waiting for IB's answer."
+			);
+		try
+		{
+			await _connection
+				.SendAsync(OrderEncoder.PlaceOrder(orderId, contract, order), cancellationToken)
+				.ConfigureAwait(false);
+			await answer.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+		}
+		finally
+		{
+			_modifications.TryRemove(new(orderId, answer));
+		}
 	}
 
 	/// <summary>
@@ -110,6 +159,33 @@ public sealed partial class IbkrClient
 			handler.Result,
 			cancellationToken
 		);
+	}
+
+	// An open order or order status frame for the order id answers its modification
+	private void OnModificationAnswer(string[] fields)
+	{
+		if (
+			fields.Length > 1
+			&& int.TryParse(fields[1], CultureInfo.InvariantCulture, out var orderId)
+			&& _modifications.TryRemove(orderId, out var answer)
+		)
+			answer.TrySetResult();
+	}
+
+	// An error for the order id refuses its modification; the order itself goes on as it was
+	private bool OnModificationError(IbkrNotice notice)
+	{
+		if (!_modifications.TryRemove(notice.RequestId, out var answer))
+			return false;
+		answer.TrySetException(new IbkrException(notice.RequestId, notice.Code, notice.Message));
+		return true;
+	}
+
+	private void OnModificationsClosed(Exception error)
+	{
+		foreach (var id in _modifications.Keys)
+			if (_modifications.TryRemove(id, out var answer))
+				answer.TrySetException(error);
 	}
 
 	private void EnsureOrderVersion()

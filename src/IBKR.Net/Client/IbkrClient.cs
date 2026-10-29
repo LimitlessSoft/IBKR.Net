@@ -237,10 +237,15 @@ public sealed partial class IbkrClient : IAsyncDisposable
 			case IncomingMessageIds.Position or IncomingMessageIds.PositionEnd:
 				OnPositionMessage(fields);
 				return;
-			case IncomingMessageIds.OpenOrder or IncomingMessageIds.OpenOrderEnd:
+			case IncomingMessageIds.OpenOrder:
+				OnModificationAnswer(fields);
+				_openOrders?.OnMessage(fields);
+				return;
+			case IncomingMessageIds.OpenOrderEnd:
 				_openOrders?.OnMessage(fields);
 				return;
 			case IncomingMessageIds.OrderStatus:
+				OnModificationAnswer(fields);
 				_openOrders?.OnMessage(fields); // and on to the placed order's handler
 				break;
 			case IncomingMessageIds.CommissionReport:
@@ -274,6 +279,13 @@ public sealed partial class IbkrClient : IAsyncDisposable
 		if (
 			notice.RequestId > 0
 			&& !ErrorCodes.IsInformational(notice.Code)
+			&& !ErrorCodes.IsOrderNotice(notice.Code)
+			&& OnModificationError(notice)
+		)
+			return;
+		if (
+			notice.RequestId > 0
+			&& !ErrorCodes.IsInformational(notice.Code)
 			&& _requests.TryRemove(notice.RequestId, out var handler)
 		)
 		{
@@ -296,6 +308,7 @@ public sealed partial class IbkrClient : IAsyncDisposable
 				handler.OnClosed(closed);
 		OnPositionsClosed(closed);
 		_openOrders?.OnClosed(closed);
+		OnModificationsClosed(closed);
 		Disconnected?.Invoke(error);
 	}
 }

@@ -55,7 +55,7 @@ Streams cancel their IB request when you stop reading; errors IB reports for a r
 | `GetPositionsAsync`, `SubscribePositionsAsync` | `reqPositions` |
 | `SubscribeAccountSummaryAsync` | `reqAccountSummary` |
 | `SubscribeAccountPnlAsync`, `SubscribePositionPnlAsync` | `reqPnL`, `reqPnLSingle` |
-| `PlaceOrderAsync`, `CancelOrderAsync` (version 178 only) | `placeOrder`, `cancelOrder` |
+| `PlaceOrderAsync`, `ModifyOrderAsync`, `CancelOrderAsync` (version 178 only) | `placeOrder`, `placeOrder` with the order's id, `cancelOrder` |
 | `GetOpenOrdersAsync` | `reqAllOpenOrders` |
 | `GetExecutionsAsync` | `reqExecutions` with commission reports |
 | `GetNewsProvidersAsync`, `GetHistoricalNewsAsync`, `GetNewsArticleAsync` | `reqNewsProviders`, `reqHistoricalNews`, `reqNewsArticle` |
@@ -68,7 +68,7 @@ Streams cancel their IB request when you stop reading; errors IB reports for a r
 It speaks protocol version 187 (text messages), which current TWS / IB Gateway still accept.
 
 Orders trade for real on a live account. They need a connection capped at
-`IbkrClient.OrderProtocolVersion` (178); modifying an order and what-if orders are not built.
+`IbkrClient.OrderProtocolVersion` (178); what-if orders are not built.
 
 **Not yet:** option greeks,
 scanners.

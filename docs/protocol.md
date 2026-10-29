@@ -346,6 +346,13 @@ order fields that have not been seen, so the library places orders only on a con
     `[24]` `O`, `[27]` `1`, `[36]` `0.0`, `[45]` `-1`, the rest `0` or `""` (see `OrderEncoder`).
   - A what-if order sets one of the unlocated flags to `1`; IB Gateway did not answer what-if
     crypto orders at all, so what-if is not offered.
+- Modify an order (0.11.0, `ModifyOrderAsync`): the same `3` frame with the working order's id
+  and every field as it should stay, the new price in `[19]` / `[20]`. Only the placing client
+  id may modify it. Built from the placeOrder layout above; **never sent while recording** (no
+  order was modified on a recorded connection). After IB's public documentation the answer is an
+  open order `5` and an order status `3` for the id, or an error `4` for the id that leaves the
+  order as it was; the client takes the first `5` / `3` for the id as accepted and an error
+  (other than 202 / 399) as refused, without failing the order's `PlaceOrderAsync` stream.
 - C → S `4` Cancel order: `[1]` 1, `[2]` order id, `[3]` `""`.
 - S → C `3` Order status: `[1]` order id, `[2]` status, `[3]` filled, `[4]` remaining, `[5]`
   average fill price, `[6]` perm id, `[7]` parent id, `[8]` last fill price, `[9]` client id,

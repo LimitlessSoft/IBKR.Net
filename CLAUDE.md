@@ -29,7 +29,9 @@ and always safe.
 
 Placing and cancelling orders exists (0.2.0, asked for by the maintainer) at protocol version 178
 only; see docs/protocol.md, "Orders". Never send an order to a live account from a test, sample or
-probe without the maintainer's explicit yes for that order. Order modification is not built.
+probe without the maintainer's explicit yes for that order. Order modification (`ModifyOrderAsync`, 0.11.0) re-sends
+placeOrder with the order's id; it was built from the placeOrder layout, never sent while
+recording.
 
 ## Git
 
