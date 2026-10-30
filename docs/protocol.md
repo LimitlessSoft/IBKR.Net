@@ -141,7 +141,32 @@ they are not needed yet and are skipped.
     crypto: type 45, last trade time in unix seconds).
 
 Tick types seen: 0 bid size, 1 bid, 2 ask, 3 ask size, 4 last, 5 last size, 6 high, 7 low,
-8 volume, 9 close, 45 last timestamp, 49 halted. Sizes may be fractional (crypto: `0.00039253`).
+8 volume, 9 close, 45 last timestamp, 49 halted; options also 10–13 (`21`, below) and 27 / 28
+open interest. Sizes may be fractional (crypto: `0.00039253`).
+
+## Option greeks and open interest
+
+Recorded read-only on IB Gateway (live) at versions **187** and **178**, 2026-10-30, 13:16–13:20
+New York (regular hours), for SPY options (SMART, trading class SPY): the 2026-10-30 755 call and
+put and the 2026-11-06 750 call, each streamed with generic ticks `101`, `""` and
+`100,101,104,106`, plus one snapshot. Identical at both versions.
+
+- C → S `1` as in Market data, the option described by symbol, `OPT`, expiry, strike, right,
+  multiplier `100`, `SMART`, `USD`, trading class; `[16]` generic ticks `101`.
+- S → C `21` TickOptionComputation (no version field): `[1]` reqId, `[2]` tick type (10 bid,
+  11 ask, 12 last, 13 model), `[3]` tick attribute (`0` on every frame), `[4]` implied
+  volatility, `[5]` delta, `[6]` option price, `[7]` PV dividend, `[8]` gamma, `[9]` vega,
+  `[10]` theta, `[11]` underlying price. Not computed: `-1` (volatility, price), `-2` (greeks).
+  The bid / ask / last types sometimes carry only price and underlying; the model type (13)
+  carried every value on every frame. Sent on every option stream (generic list or not) and in a
+  snapshot.
+- Generic tick `101` on an option: `2` TickSize **27** (call open interest) and **28** (put open
+  interest), once per stream, 0.3–0.4 s after the request. The option's own side has the value,
+  the other side `0` (the 755 put: 27 `0`, 28 `41057`). Without `101` neither came; in a snapshot
+  generic ticks are refused (321, see Market data snapshot).
+- On the underlying stock, `101` gives 27 / 28 as the whole chain's open interest, and later 29 /
+  30 (call / put option volume) updates.
+- Timing: the first model `21` came 0.2–1.5 s after the request.
 
 ## Market data snapshot
 

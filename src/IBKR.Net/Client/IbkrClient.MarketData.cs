@@ -20,7 +20,8 @@ public sealed partial class IbkrClient
 
 	/// <summary>
 	/// Streaming quotes for a contract (reqMktData); uses one of the account's market data lines
-	/// until you stop reading.
+	/// until you stop reading. Options also stream IB's greeks (<see cref="MarketDataTick.Option"/>);
+	/// <paramref name="genericTicks"/> "101" adds their open interest (size ticks 27 / 28).
 	/// </summary>
 	public IAsyncEnumerable<MarketDataTick> SubscribeMarketDataAsync(
 		Contract contract,
@@ -104,6 +105,7 @@ public sealed partial class IbkrClient
 			IncomingMessageIds.TickSize => Decoders.TickSize(fields),
 			IncomingMessageIds.TickGeneric => Decoders.TickGeneric(fields),
 			IncomingMessageIds.TickString => Decoders.TickString(fields),
+			IncomingMessageIds.TickOptionComputation => Decoders.TickOptionComputation(fields),
 			_ => null,
 		};
 

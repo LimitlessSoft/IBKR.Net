@@ -40,7 +40,7 @@ await foreach (var tick in client.SubscribeMarketDataAsync(spy))
 Streams cancel their IB request when you stop reading; errors IB reports for a request throw
 `IbkrException`, informational messages arrive on `client.Notice`.
 
-## What it covers (0.9.0)
+## What it covers (0.12.0)
 
 | `IbkrClient` | IB request |
 |---|---|
@@ -48,7 +48,7 @@ Streams cancel their IB request when you stop reading; errors IB reports for a r
 | `GetServerTimeAsync` | `reqCurrentTime` |
 | `GetContractDetailsAsync` | `reqContractDetails` |
 | `GetOptionChainParametersAsync` | `reqSecDefOptParams` |
-| `SetMarketDataTypeAsync`, `SubscribeMarketDataAsync` | `reqMarketDataType`, `reqMktData` |
+| `SetMarketDataTypeAsync`, `SubscribeMarketDataAsync` | `reqMarketDataType`, `reqMktData` (options: greeks from `tickOptionComputation`, open interest with generic tick 101) |
 | `GetMarketDataSnapshotAsync` | `reqMktData` snapshot (never the paid regulatory snapshot), until `tickSnapshotEnd` |
 | `GetHistoricalBarsAsync` | `reqHistoricalData` |
 | `SubscribeRealtimeBarsAsync` | `reqRealTimeBars` |

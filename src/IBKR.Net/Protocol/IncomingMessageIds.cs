@@ -15,6 +15,7 @@ internal static class IncomingMessageIds
 	public const string MarketDepthL2 = "13";
 	public const string ManagedAccounts = "15";
 	public const string HistoricalData = "17";
+	public const string TickOptionComputation = "21";
 	public const string TickGeneric = "45";
 	public const string TickString = "46";
 	public const string RealTimeBar = "50";
@@ -57,7 +58,7 @@ internal static class IncomingMessageIds
 		messageId switch
 		{
 			ContractData or SecDefOptParams or SecDefOptParamsEnd or TickReqParams => 1,
-			HistoricalData or Pnl or PnlSingle or ExecutionData => 1,
+			HistoricalData or Pnl or PnlSingle or ExecutionData or TickOptionComputation => 1,
 			NewsArticle or TickNews or HistoricalNews or HistoricalNewsEnd => 1,
 			HistoricalTicksMidPoint or HistoricalTicksBidAsk or HistoricalTicksLast or TickByTick =>
 				1,

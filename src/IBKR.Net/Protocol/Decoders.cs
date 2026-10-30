@@ -160,6 +160,34 @@ internal static class Decoders
 		return new MarketDataTick(reader.Int(), Value: reader.Double());
 	}
 
+	/// <summary>
+	/// 21 (no version field, same at 178 and 187): [1] request id, [2] tick type, [3] tick
+	/// attribute, [4] implied volatility, [5] delta, [6] option price, [7] PV dividend, [8] gamma,
+	/// [9] vega, [10] theta, [11] underlying price. -1 (volatility, prices) and -2 (greeks) mean
+	/// not computed.
+	/// </summary>
+	public static MarketDataTick TickOptionComputation(string[] fields)
+	{
+		var reader = new FieldReader(fields, 2);
+		var field = reader.Int();
+		reader.Skip(); // tick attribute: 0 (return based) on every recorded frame
+		double? NonNegative(double? x) => x is >= 0 ? x : null;
+		double? Greek(double? x) => x is -2 ? null : x;
+		return new MarketDataTick(
+			field,
+			Option: new OptionComputation(
+				NonNegative(reader.NullableDouble()),
+				Greek(reader.NullableDouble()),
+				NonNegative(reader.NullableDouble()),
+				NonNegative(reader.NullableDouble()),
+				Greek(reader.NullableDouble()),
+				Greek(reader.NullableDouble()),
+				Greek(reader.NullableDouble()),
+				NonNegative(reader.NullableDouble())
+			)
+		);
+	}
+
 	/// <summary>46: [3] tick type, [4] value (45 = last trade time, unix seconds).</summary>
 	public static MarketDataTick TickString(string[] fields)
 	{
